@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import {
   ReactFlow,
   Background,
@@ -10,6 +10,7 @@ import {
   BackgroundVariant,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { Eye, EyeOff } from 'lucide-react';
 import { CustomServiceNode } from './CustomServiceNode';
 import { SimulationState } from '../../types/simulation';
 
@@ -26,6 +27,7 @@ export const InfrastructureGraph: React.FC<GraphProps> = ({
   state,
   onSelectNode,
 }) => {
+  const [showMiniMap, setShowMiniMap] = useState<boolean>(true);
   const hasHighlight = !!(state.highlightPath && state.highlightPath.nodeIds.length > 0);
   const hasBlastRadius = !!(state.blastRadiusNodeIds && state.blastRadiusNodeIds.length > 0);
 
@@ -192,22 +194,49 @@ export const InfrastructureGraph: React.FC<GraphProps> = ({
           size={1.5}
           color="rgba(255, 255, 255, 0.04)"
         />
-        <Controls position="bottom-right" />
-        <MiniMap
-          nodeColor={(n) => {
-            const status = (n.data as any)?.status;
-            if (status === 'FAILED') return '#f43f5e';
-            if (status === 'DEGRADED') return '#fbbf24';
-            if (status === 'RECOVERING') return '#495464';
-            if (status === 'AT_RISK') return '#fbbf24';
-            return '#10b981';
-          }}
-          maskColor="rgba(11, 13, 19, 0.8)"
-          className="!bg-[var(--surface-bg)] !border !border-[var(--border-color)] !rounded-lg"
-          position="bottom-left"
-          zoomable
-          pannable
+        <Controls 
+          position="bottom-right" 
+          showInteractive={false}
         />
+        {showMiniMap && (
+          <MiniMap
+            nodeColor={(n) => {
+              const status = (n.data as any)?.status;
+              if (status === 'FAILED') return '#f43f5e';
+              if (status === 'DEGRADED') return '#fbbf24';
+              if (status === 'RECOVERING') return '#495464';
+              if (status === 'AT_RISK') return '#fbbf24';
+              return '#10b981';
+            }}
+            maskColor="rgba(11, 13, 19, 0.85)"
+            className="!bg-[var(--surface-bg)] !border !border-[var(--border-color)] !rounded-md"
+            position="bottom-left"
+            zoomable={false}
+            pannable={false}
+            nodeStrokeWidth={2}
+            nodeBorderRadius={2}
+            style={{ width: 96, height: 64 }}
+          />
+        )}
+
+        {/* Floating MiniMap Toggle (Bottom Left) */}
+        <button
+          onClick={() => setShowMiniMap(!showMiniMap)}
+          className="absolute bottom-2 left-2 z-20 flex items-center gap-1 px-1.5 py-1 rounded bg-[var(--surface-bg)]/90 hover:bg-[var(--surface-bg)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-[9px] font-mono shadow-sm transition-all backdrop-blur-sm"
+          title={showMiniMap ? "Hide MiniMap" : "Show MiniMap"}
+        >
+          {showMiniMap ? (
+            <>
+              <EyeOff className="w-2.5 h-2.5 text-slate-400" />
+              <span>Hide Map</span>
+            </>
+          ) : (
+            <>
+              <Eye className="w-2.5 h-2.5 text-slate-400" />
+              <span>MiniMap</span>
+            </>
+          )}
+        </button>
       </ReactFlow>
     </div>
   );
