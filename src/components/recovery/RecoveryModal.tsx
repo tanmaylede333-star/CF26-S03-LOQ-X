@@ -345,9 +345,9 @@ export const RecoveryModal: React.FC<RecoveryModalProps> = ({
       aria-labelledby="recovery-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200 select-none font-mono"
     >
-      <div className="glass-panel w-full max-w-2xl rounded-2xl p-5 sm:p-6 border border-[var(--border-color)] shadow-[0_12px_45px_rgba(0,0,0,0.6)] flex flex-col gap-4 text-[var(--text-primary)] max-h-[90vh] overflow-y-auto">
+      <div className="glass-panel w-full max-w-2xl rounded-2xl p-5 sm:p-6 border border-[var(--border-color)] shadow-[0_12px_45px_rgba(0,0,0,0.6)] flex flex-col gap-4 text-[var(--text-primary)] max-h-[90vh] overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-[var(--border-color)]">
+        <div className="flex items-center justify-between pb-3 border-b border-[var(--border-color)] shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-lg bg-[#495464] border border-[#BBBFCA] text-white shadow-sm">
               <ShieldCheck className="w-5 h-5" />
@@ -370,7 +370,8 @@ export const RecoveryModal: React.FC<RecoveryModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="flex-1 overflow-y-auto min-h-0 pr-1 space-y-4">
           {/* Target Service Selector */}
           <div>
             <div className="flex justify-between items-center mb-1.5">
@@ -568,9 +569,10 @@ export const RecoveryModal: React.FC<RecoveryModalProps> = ({
               </div>
             </div>
           )}
+          </div>
 
           {/* Modal Actions */}
-          <div className="pt-3 border-t border-[var(--border-color)] flex items-center justify-between gap-2">
+          <div className="pt-3 border-t border-[var(--border-color)] flex items-center justify-between gap-2 shrink-0 mt-auto">
             <span className="text-[10px] text-[var(--text-tertiary)] font-sans">
               Dispatches at T+{state.currentTime} • Completes at T+{state.currentTime + (recoveryType === 'ISOLATE' ? 0 : customDuration)}
             </span>

@@ -468,7 +468,7 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
 
       {/* 3. SCENARIO LIBRARY TAB CONTENT WITH PROGRESSIVE DISCLOSURE ACCORDIONS */}
       {activeTab === 'LIBRARY' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full auto-rows-fr">
           {allScenarios.map((sc) => {
             const isCurrent = activeScenario.id === sc.id;
             const isExpanded = expandedCardId === sc.id;
@@ -476,16 +476,16 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
             return (
               <div
                 key={sc.id}
-                className={`p-4 rounded-lg bg-[var(--surface-bg)] border transition-all flex flex-col justify-between gap-3 shadow-sm ${
+                className={`p-4 rounded-lg bg-[var(--surface-bg)] border transition-all flex flex-col justify-between gap-3 shadow-sm h-full min-w-0 ${
                   isCurrent
                     ? 'border-[#495464] ring-1 ring-[#495464] shadow-md'
                     : 'border-[var(--border-color)] hover:border-[var(--text-tertiary)]'
                 }`}
               >
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <span
-                      className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase ${
+                      className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase shrink-0 ${
                         sc.category === 'POWER'
                           ? 'bg-amber-950 text-amber-400 border border-amber-800'
                           : sc.category === 'WATER'
@@ -500,9 +500,9 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
                       {sc.category}
                     </span>
 
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] text-[var(--text-secondary)] font-semibold">
-                        TMax: {sc.parameters.maxSimulationTime}m
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[10px] text-[var(--text-secondary)] font-semibold font-mono">
+                        TMax: {sc.parameters?.maxSimulationTime || 60}m
                       </span>
                       {!sc.isPredefined && (
                         <button
@@ -517,18 +517,24 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
                     </div>
                   </div>
 
-                  <h3 className="text-sm font-bold text-[var(--text-primary)] font-heading leading-snug">
+                  <h3
+                    className="text-sm font-bold text-[var(--text-primary)] font-heading leading-snug truncate"
+                    title={sc.name}
+                  >
                     {sc.name}
                   </h3>
 
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed line-clamp-2">
+                  <p
+                    className="text-xs text-[var(--text-secondary)] leading-relaxed line-clamp-2"
+                    title={sc.description}
+                  >
                     {sc.description}
                   </p>
 
                   {/* Summary Bar */}
                   <div className="mt-1 pt-2 border-t border-[var(--border-color)] flex items-center justify-between text-[10px] text-[var(--text-secondary)]">
                     <span>
-                      Failures: <strong className="text-rose-400">{sc.initialFailures.length} Nodes</strong>
+                      Failures: <strong className="text-rose-400 font-mono">{sc.initialFailures?.length || 0} Nodes</strong>
                     </span>
                     <button
                       onClick={() => setExpandedCardId(isExpanded ? null : sc.id)}
@@ -542,24 +548,24 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
                   {/* Progressive Disclosure Details Accordion */}
                   {isExpanded && (
                     <div className="p-2.5 rounded bg-[var(--card-subtle)] border border-[var(--border-color)] flex flex-col gap-2 text-[10px] animate-fadeIn mt-1">
-                      <span className="font-bold text-slate-300 uppercase tracking-wider">
+                      <span className="font-bold text-slate-300 uppercase tracking-wider font-mono">
                         Initial Disruption Targets:
                       </span>
-                      <div className="space-y-1">
+                      <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
                         {sc.initialFailures.map((f, idx) => {
                           const targetNode = INITIAL_CITY_NODES.find((n) => n.id === f.nodeId);
                           return (
                             <div key={idx} className="flex flex-col text-[10px] border-b border-[var(--border-color)]/60 pb-1 last:border-0 last:pb-0">
                               <div className="flex items-center justify-between">
-                                <span className="font-bold text-rose-300">
+                                <span className="font-bold text-rose-300 truncate">
                                   T+{f.time}m: {targetNode ? `${targetNode.code} — ${targetNode.name}` : f.nodeId}
                                 </span>
-                                <span className="text-rose-400 font-mono text-[9px] uppercase">
+                                <span className="text-rose-400 font-mono text-[9px] uppercase ml-1 shrink-0">
                                   {f.severity}
                                 </span>
                               </div>
                               {f.reason && (
-                                <span className="text-slate-400 text-[9px] italic">
+                                <span className="text-slate-400 text-[9px] italic truncate">
                                   Cause: {f.reason}
                                 </span>
                               )}
@@ -577,7 +583,8 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 pt-2">
+                {/* Card Actions - Bottom Aligned */}
+                <div className="flex items-center gap-2 pt-2 mt-auto border-t border-[var(--border-color)]/40">
                   <button
                     onClick={() => onSelectScenario(sc)}
                     className={`flex-1 py-1.5 rounded text-xs font-bold transition-all ${
@@ -594,7 +601,7 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
                       onSelectScenario(sc);
                       onLaunchSimulation(sc);
                     }}
-                    className="p-1.5 rounded bg-[#495464] hover:bg-[#334155] text-white transition-all shadow-sm"
+                    className="p-1.5 rounded bg-[#495464] hover:bg-[#334155] text-white transition-all shadow-sm shrink-0"
                     title="Launch directly in Simulation Canvas"
                     aria-label="Launch Scenario in Simulator"
                   >

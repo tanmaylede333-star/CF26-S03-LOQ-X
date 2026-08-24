@@ -89,7 +89,7 @@ export const FailureInjectionModal: React.FC<FailureModalProps> = ({
     >
       <div className="glass-panel w-full max-w-2xl max-h-[90vh] rounded-2xl p-5 border border-red-500/40 shadow-2xl flex flex-col gap-4 overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-red-900/50">
+        <div className="flex items-center justify-between pb-3 border-b border-red-900/50 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-lg bg-red-950/80 border border-red-700/60 text-red-400">
               <ShieldAlert className="w-5 h-5" />
@@ -112,8 +112,8 @@ export const FailureInjectionModal: React.FC<FailureModalProps> = ({
           </button>
         </div>
 
-        {/* Scheduled Disruptions List */}
-        <div className="space-y-3">
+        {/* Scheduled Disruptions List - Scrollable */}
+        <div className="flex-1 overflow-y-auto pr-1 min-h-0 space-y-3">
           {disruptions.map((disruption, idx) => (
             <div
               key={idx}
@@ -217,7 +217,7 @@ export const FailureInjectionModal: React.FC<FailureModalProps> = ({
         </div>
 
         {/* Modal Actions */}
-        <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-3">
+        <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-3 shrink-0">
           <span className="text-xs font-mono text-slate-400">
             Total origins: <strong className="text-red-400">{disruptions.length}</strong>
           </span>

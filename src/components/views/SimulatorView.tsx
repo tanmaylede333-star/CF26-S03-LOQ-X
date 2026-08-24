@@ -570,7 +570,7 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
       {isGraphExpanded && (
         <div className="fixed inset-0 z-50 bg-[#0b0d13]/95 backdrop-blur-md flex flex-col p-4 lg:p-6 overflow-hidden animate-fadeIn">
           {/* Fullscreen Workspace Header */}
-          <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--border-color)]">
+          <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--border-color)] shrink-0">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded bg-[#495464] border border-[#BBBFCA] text-white">
                 <GitBranch className="w-4 h-4" />
@@ -611,7 +611,7 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
           </div>
 
           {/* Fullscreen Graph Canvas */}
-          <div className="flex-1 w-full h-full rounded-lg bg-[#0b0d13] border border-[var(--border-color)] overflow-hidden relative">
+          <div className="flex-1 w-full h-full min-h-0 rounded-lg bg-[#0b0d13] border border-[var(--border-color)] overflow-hidden relative">
             <InfrastructureGraph state={state} onSelectNode={onSelectNode} />
 
             {/* Live Inspector Drawer inside expanded workspace if a node is selected */}
@@ -631,7 +631,7 @@ export const SimulatorView: React.FC<SimulatorViewProps> = ({
           </div>
 
           {/* Workspace Footer Bar */}
-          <div className="pt-3 mt-3 border-t border-[var(--border-color)] flex items-center justify-between text-xs text-slate-400">
+          <div className="pt-3 mt-3 border-t border-[var(--border-color)] flex items-center justify-between text-xs text-slate-400 shrink-0">
             <div className="flex items-center gap-4 text-[10px]">
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400" /> Healthy</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400" /> Degraded</span>
