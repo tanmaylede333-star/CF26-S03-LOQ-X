@@ -166,10 +166,10 @@ RESPONSE GUIDELINES:
     const activeKey = apiKey || DEFAULT_API_KEY;
 
     try {
-      // 1. Try modern @google/genai SDK
+      // 1. Try modern @google/genai SDK with gemini-3.7-flash
       const ai = new GoogleGenAI({ apiKey: activeKey });
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.7-flash',
         contents: [
           {
             role: 'user',
@@ -186,9 +186,9 @@ RESPONSE GUIDELINES:
     }
 
     try {
-      // 2. Direct REST endpoint fallback
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeKey}`,
+      // 2. Direct REST endpoint fallback (gemini-3.7-flash / gemini-3.6-flash)
+      let response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${activeKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -203,12 +203,34 @@ RESPONSE GUIDELINES:
               },
             ],
             generationConfig: {
-              temperature: 0.3,
+              temperature: 0.4,
               maxOutputTokens: 1200,
             },
           }),
         }
       );
+
+      if (!response.ok) {
+        // Fallback to gemini-3.6-flash
+        response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${activeKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: 'user',
+                  parts: [
+                    { text: systemInstruction },
+                    { text: `User Query: ${userPrompt}` },
+                  ],
+                },
+              ],
+            }),
+          }
+        );
+      }
 
       if (!response.ok) {
         throw new Error(`Gemini API error ${response.status}: ${response.statusText}`);
@@ -389,7 +411,7 @@ Feel free to ask about specific assets, causal failure chains, recovery recommen
                     GEMINI INTELLIGENCE
                   </span>
                   <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                    2.5 FLASH
+                    3.7 FLASH
                   </span>
                 </div>
                 <span className="text-[9px] text-[var(--text-secondary)]">
