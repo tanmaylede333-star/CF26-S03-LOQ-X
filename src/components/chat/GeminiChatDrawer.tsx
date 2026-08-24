@@ -25,7 +25,6 @@ import {
 } from 'lucide-react';
 import { SimulationState } from '../../types/simulation';
 import { formatTime } from '../../lib/utils';
-import { GoogleGenAI } from '@google/genai';
 
 interface ChatMessage {
   id: string;
@@ -86,13 +85,14 @@ export const GeminiChatDrawer: React.FC<GeminiChatDrawerProps> = ({
     {
       id: 'welcome-msg',
       sender: 'ASSISTANT',
-      text: `### ⚡ CASCADE MISSION INTELLIGENCE ACTIVE
-I am your **Urban Resilience & Disaster Engineering AI**, powered by **Google Gemini**. 
+      text: `### ⚡ CASCADE MISSION CONTROL ASSISTANT ACTIVE
+I am your **AI Urban Resilience & Incident Engineering Specialist**, powered by **Google Gemini 3.7 Flash**.
 
-I am continuously monitoring real-time telemetry from **${state.scenario.name}** at **T+${formatTime(currentT)}**. You can ask me about:
-* **Root-Cause & Cascade Analysis**: Why nodes failed and where failures will propagate next.
-* **Resilience Strategy**: Optimal field actions (Backup Power, Islanding, Rapid Repair).
-* **General Engineering & Science**: SCADA networks, civil infrastructure, smart cities, power grids, or any general question!`,
+I am continuously analyzing live telemetry for **${state.scenario.name}** at **T+${formatTime(currentT)}**. You can ask:
+* 🚨 **Crisis Status**: *"What is failing right now?"*
+* 💡 **Recovery**: *"What is the best action to cure the grid?"*
+* 🏥 **Asset Inspection**: *"Is Metro Hospital affected by the power outage?"*
+* 🌐 **General Science**: Ask about electrical engineering, SCADA, thermodynamics, or general questions!`,
       timestamp: '00:00',
     },
   ]);
@@ -125,138 +125,85 @@ I am continuously monitoring real-time telemetry from **${state.scenario.name}**
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // --- LIVE GEMINI API CALLER WITH FULL DOMAIN CONTEXT ---
+  // --- FAST LIVE GEMINI API CALLER WITH 4S ABORT TIMEOUT ---
   const callLiveGeminiAPI = async (userPrompt: string): Promise<string> => {
-    const failedNodes = state.nodes.filter((n) => n.status === 'FAILED').map((n) => `${n.name} (${n.code}, ID: ${n.id}, Zone: ${n.zone})`);
-    const degradedNodes = state.nodes.filter((n) => n.status === 'DEGRADED').map((n) => `${n.name} (${n.code}, ID: ${n.id})`);
-    const recoveringNodes = state.nodes.filter((n) => n.status === 'RECOVERING').map((n) => `${n.name} (${n.code})`);
+    const failedNodes = state.nodes.filter((n) => n.status === 'FAILED').map((n) => `${n.name} (${n.code})`);
+    const degradedNodes = state.nodes.filter((n) => n.status === 'DEGRADED').map((n) => `${n.name} (${n.code})`);
 
-    const systemInstruction = `
-You are the Chief AI Mission Control Officer and Resilience Specialist for CASCADE (Urban Infrastructure Cascade Simulator, Model S-03).
-You possess deep expertise in electrical power engineering, SCADA telecommunications, municipal hydraulics, trauma hospital contingency systems, transportation ITMS, and general science/engineering.
-
-KNOWLEDGE BASE & CITY TOPOLOGY:
-- Central Power Substation (power-grid-main / P01, Sector 1): High-voltage transmission hub. Single Point of Failure (SPOF). Powers North Water Pump, Central Telecom Tower, ITMS Traffic Signals.
-- North Intake Water Pump (water-pump-01 / W01, Sector 3): River lift pump. Depends on Power P01. Supplies Urban Water Distribution Network.
-- Urban Water Distribution Network (water-network-01 / W02, Sector 1): Hydraulic grid supplying Metro Hospital cooling and city zones.
-- Central Telecom Tower & Fiber Hub (telecom-tower-01 / C01, Sector 1): Powers cell towers, telemetry, and SCADA links. Powers Emergency Dispatch.
-- Metro Hospital Trauma Center (hospital-metro-01 / H01, Sector 2): Level-1 trauma center. Depends on Power P01 and Water W02. Has 20-min auxiliary backup.
-- ITMS Traffic Control Junction (traffic-signals-01 / T01, Sector 1): Synchronized road signals. Depends on Power P01 and Telecom C01.
-- Emergency Dispatch 112/EMS (emergency-dispatch-01 / E01, Sector 1): Public safety dispatch. Depends on Telecom C01 and Power P01.
-
-CURRENT LIVE SIMULATION TELEMETRY:
-- Active Disaster Scenario: "${state.scenario.name}" (${state.scenario.category})
-- Scenario Description: "${state.scenario.description}"
-- Virtual Time: T+${formatTime(currentT)} (Status: ${state.status})
-- Overall System Health: ${state.metrics.systemHealthPercentage}%
-- Cascade Depth: Level ${state.metrics.cascadeDepth}
-- Total Disrupted Assets: ${state.metrics.affectedServices} of ${state.nodes.length} nodes
-- Outage Nodes (FAILED): ${failedNodes.join(', ') || 'None'}
-- Degraded Nodes: ${degradedNodes.join(', ') || 'None'}
-- Actively Recovering Nodes: ${recoveringNodes.join(', ') || 'None'}
-- Currently Selected Asset: ${selectedNode.name} (${selectedNode.code}, Status: ${selectedNode.status})
-
-RESPONSE GUIDELINES:
-1. When asked about the city, simulation, failures, or recoveries: Use the live telemetry and city topology above to provide precise, technically grounded answers.
-2. When asked about mitigation strategies: Highlight high-impact actions (e.g., Auxiliary Turbine at Water Pump, Islanding at Hospital, Rapid Transformer Bypass at Substation).
-3. When asked general questions (science, history, physics, programming, general engineering, etc.): Provide thorough, accurate, friendly, and structured markdown answers.
-4. Format output using clean GitHub markdown with bullet points, bold key terms, and code pills. Keep tone professional, authoritative, and helpful.
-`;
+    const systemInstruction = `You are CASCADE AI, Chief Mission Control & Disaster Engineering Assistant for CASCADE City Simulator.
+TELEMETRY: Scenario: "${state.scenario.name}", Time: T+${formatTime(currentT)}, System Health: ${state.metrics.systemHealthPercentage}%, Cascade Depth: Level ${state.metrics.cascadeDepth}, Failed Nodes: ${failedNodes.join(', ') || 'None'}, Degraded Nodes: ${degradedNodes.join(', ') || 'None'}.
+INSTRUCTIONS: Answer the user's question directly, clearly, and concisely in clean markdown with bullet points. If asked general science/engineering/world questions, answer accurately and thoroughly.`;
 
     const activeKey = apiKey || DEFAULT_API_KEY;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000); // 4-second strict timeout
 
     try {
-      // 1. Try modern @google/genai SDK with gemini-3.7-flash
-      const ai = new GoogleGenAI({ apiKey: activeKey });
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.7-flash',
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: `${systemInstruction}\n\nUser Query: ${userPrompt}` }],
-          },
-        ],
-      });
-
-      if (response.text) {
-        return response.text;
-      }
-    } catch (sdkError: any) {
-      console.warn('@google/genai SDK call fallback to REST endpoint:', sdkError);
-    }
-
-    try {
-      // 2. Direct REST endpoint fallback (gemini-3.7-flash / gemini-3.6-flash)
-      let response = await fetch(
+      const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${activeKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             contents: [
               {
                 role: 'user',
                 parts: [
-                  { text: systemInstruction },
-                  { text: `User Query: ${userPrompt}` },
+                  { text: `${systemInstruction}\n\nUser Question: ${userPrompt}` },
                 ],
               },
             ],
             generationConfig: {
-              temperature: 0.4,
-              maxOutputTokens: 1200,
+              temperature: 0.3,
+              maxOutputTokens: 800,
             },
           }),
         }
       );
 
-      if (!response.ok) {
-        // Fallback to gemini-3.6-flash
-        response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${activeKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [
-                {
-                  role: 'user',
-                  parts: [
-                    { text: systemInstruction },
-                    { text: `User Query: ${userPrompt}` },
-                  ],
-                },
-              ],
-            }),
-          }
-        );
-      }
+      clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        throw new Error(`Gemini API error ${response.status}: ${response.statusText}`);
+      if (response.ok) {
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text && text.trim()) {
+          return text.trim();
+        }
       }
-
-      const data = await response.json();
-      const answer = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      return answer || 'No response received from Gemini API.';
     } catch (err: any) {
-      console.warn('Live API request failed, using intelligent local engine:', err);
-      return synthesizeLocalResponse(userPrompt);
+      clearTimeout(timeoutId);
+      console.warn('Gemini Live API timed out or fallback engaged:', err.message);
     }
+
+    // Fast local domain synthesizer
+    return synthesizeLocalResponse(userPrompt);
   };
 
-  // --- LOCAL INTELLIGENCE ENGINE (OFFLINE FALLBACK) ---
+  // --- HIGH-SPEED INTELLIGENT DOMAIN SYNTHESIZER ---
   const synthesizeLocalResponse = (userQuery: string): string => {
     const q = userQuery.toLowerCase().trim();
     const failedNodes = state.nodes.filter((n) => n.status === 'FAILED');
     const degradedNodes = state.nodes.filter((n) => n.status === 'DEGRADED');
     const healthyCount = state.nodes.filter((n) => n.status === 'HEALTHY').length;
 
-    // 1. Status / Situation Report
-    if (q.includes('status') || q.includes('summarize') || q.includes('situation') || q.includes('crisis') || q.includes('overview')) {
+    // 1. Greetings
+    if (q === 'hi' || q === 'hello' || q === 'hey' || q.startsWith('hi ') || q.startsWith('hello ')) {
+      return `### 👋 Hello, Mission Commander!
+CASCADE AI is active and monitoring the urban infrastructure network.
+
+* **Active Scenario**: \`${state.scenario.name}\`
+* **Network Health**: **${state.metrics.systemHealthPercentage}%** (${healthyCount}/${state.nodes.length} assets operational)
+* **Cascade Depth**: **Level ${state.metrics.cascadeDepth}**
+
+How can I assist you right now? You can ask for a **crisis status**, **recovery recommendations**, **hospital chain analysis**, or any general technical question!`;
+    }
+
+    // 2. Status / Situation Report
+    if (q.includes('status') || q.includes('summarize') || q.includes('situation') || q.includes('crisis') || q.includes('overview') || q.includes('what is happening')) {
       return `### 🚨 Live Incident Summary — T+${formatTime(currentT)}
 * **Active Scenario**: \`${state.scenario.name}\`
-* **Grid Operational Health**: **${state.metrics.systemHealthPercentage}%** (${healthyCount}/${state.nodes.length} assets healthy)
+* **Grid Operational Health**: **${state.metrics.systemHealthPercentage}%** (${healthyCount}/${state.nodes.length} assets operational)
 * **Cascade Depth**: **Level ${state.metrics.cascadeDepth}**
 * **Disrupted Assets**: **${state.metrics.affectedServices} nodes**
 
@@ -275,10 +222,10 @@ ${
 }`;
     }
 
-    // 2. Recovery / Mitigation Inquiries
-    if (q.includes('recover') || q.includes('cure') || q.includes('fix') || q.includes('mitigate') || q.includes('advise') || q.includes('best action')) {
+    // 3. Recovery / Mitigation Inquiries
+    if (q.includes('recover') || q.includes('cure') || q.includes('fix') || q.includes('mitigate') || q.includes('advise') || q.includes('best action') || q.includes('strategy')) {
       return `### 🛡️ Recommended Priority Recovery Actions
-Based on multi-criteria cascade evaluation, deploy the following intervention:
+Based on multi-criteria cascade evaluation, deploy the following interventions:
 
 1. **North Intake Auxiliary Diesel Turbine** (\`water-pump-01\`):
    * **Action**: \`BACKUP_POWER\`
@@ -295,7 +242,7 @@ Based on multi-criteria cascade evaluation, deploy the following intervention:
    * **Impact**: Restores upstream high-voltage bus, triggering downstream **Recovery Cascade** to 100% health.`;
     }
 
-    // 3. Specific Node Inquiries
+    // 4. Specific Node Inquiries
     if (q.includes('hospital') || q.includes('h01') || q.includes('icu')) {
       const hosp = state.nodes.find((n) => n.id === 'hospital-metro-01');
       return `### 🏥 Metro Hospital Trauma Center (H01)
@@ -322,23 +269,48 @@ Based on multi-criteria cascade evaluation, deploy the following intervention:
 * **Role**: Primary High-Voltage Single Point of Failure (SPOF). Disruption causes cascading outages across water pumps, cellular towers, traffic signals, and hospital cooling.`;
     }
 
-    // 4. Default Helpful Intelligence
-    return `### 🤖 Telemetry Assessment for: "${userQuery}"
+    if (q.includes('scada') || q.includes('telecom') || q.includes('c01')) {
+      return `### 📡 Telecommunication & SCADA Backbone (C01)
+* **Operational Status**: **${state.nodes.find((n) => n.id === 'telecom-tower-01')?.status}**
+* **Function**: Transmits cellular communications and automated remote switching telemetry to mission control.
+* **Impact**: Failure disconnects Emergency Dispatch (112/EMS) and ITMS traffic controllers.`;
+    }
+
+    // 5. Civil & Infrastructure Engineering Concepts
+    if (q.includes('what is scada') || q.includes('explain scada')) {
+      return `**SCADA** (*Supervisory Control and Data Acquisition*) is an industrial control system architecture that collects real-time sensor measurements (voltage, water pressure, pipeline flow rates) and enables operators to remotely trip breakers and open valves across city networks.`;
+    }
+
+    if (q.includes('cascade depth') || q.includes('what is depth')) {
+      return `**Cascade Depth** measures the length of sequential failure chains:
+* **Level 0**: Root failure injection (e.g. Substation P01).
+* **Level 1**: Direct dependent failure (Water Pump W01 stops).
+* **Level 2**: Secondary failure (Water Network W02 loses pressure).
+* **Level 3**: Downstream impact (Hospital H01 cooling loops fail).`;
+    }
+
+    if (q.includes('microgrid') || q.includes('islanding')) {
+      return `**Microgrid Islanding** allows a critical facility (like a Hospital or Emergency Dispatch Center) to disconnect from the failing main grid and operate autonomously on local battery storage and backup generators.`;
+    }
+
+    // 6. Default General Knowledge & Telemetry Fallback
+    return `### 🤖 Telemetry & Engineering Assessment
+* **Query**: "${userQuery}"
 * **Active Scenario**: \`${state.scenario.name}\`
 * **System Health**: **${state.metrics.systemHealthPercentage}%** | **Cascade Depth**: Level ${state.metrics.cascadeDepth}
 * **Active Outages**: ${failedNodes.map(n => n.name).join(', ') || 'None'}
 
-Feel free to ask about specific assets, causal failure chains, recovery recommendations, or general technical questions!`;
+Feel free to ask about specific assets, causal failure chains, recovery recommendations, or any general technical question!`;
   };
 
   const handleSendMessage = async (queryText?: string) => {
-    const text = queryText || inputQuery;
-    if (!text.trim()) return;
+    const text = (queryText || inputQuery).trim();
+    if (!text) return;
 
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       sender: 'USER',
-      text: text.trim(),
+      text,
       timestamp: formatTime(currentT),
     };
 
@@ -347,7 +319,7 @@ Feel free to ask about specific assets, causal failure chains, recovery recommen
     setIsTyping(true);
 
     try {
-      const responseText = await callLiveGeminiAPI(text.trim());
+      const responseText = await callLiveGeminiAPI(text);
       const botMsg: ChatMessage = {
         id: `bot-${Date.now()}`,
         sender: 'ASSISTANT',
@@ -359,12 +331,12 @@ Feel free to ask about specific assets, causal failure chains, recovery recommen
       const errorBotMsg: ChatMessage = {
         id: `bot-${Date.now()}`,
         sender: 'ASSISTANT',
-        text: `⚠️ *An error occurred while connecting to Gemini:* ${err.message}`,
+        text: `⚠️ *Notice:* ${err.message}`,
         timestamp: formatTime(currentT),
       };
       setMessages((prev) => [...prev, errorBotMsg]);
     } finally {
-      setIsTyping(false);
+      setIsTyping(false); // ALWAYS reset typing state
     }
   };
 
@@ -530,7 +502,7 @@ Feel free to ask about specific assets, causal failure chains, recovery recommen
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce" />
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce [animation-delay:0.2s]" />
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce [animation-delay:0.4s]" />
-                      <span className="text-[10px] text-[var(--text-tertiary)] ml-1">Analyzing telemetry with Gemini...</span>
+                      <span className="text-[10px] text-[var(--text-tertiary)] ml-1">Analyzing with Gemini AI...</span>
                     </div>
                   </div>
                 )}
@@ -542,25 +514,25 @@ Feel free to ask about specific assets, causal failure chains, recovery recommen
               <div className="px-3 py-2 border-t border-[var(--border-color)] bg-[var(--card-subtle)] flex items-center gap-1.5 overflow-x-auto text-[10px] scrollbar-none">
                 <button
                   onClick={() => handleQuickPrompt('What is the current live crisis status and top outage?')}
-                  className="px-2.5 py-1 rounded bg-[var(--surface-bg)] hover:bg-[var(--hover-bg)] border border-[var(--border-color)] text-[var(--text-primary)] shrink-0 transition-colors"
+                  className="px-2.5 py-1 rounded bg-[var(--surface-bg)] hover:bg-[var(--hover-bg)] border border-[var(--border-color)] text-[var(--text-primary)] shrink-0 transition-colors cursor-pointer"
                 >
                   🚨 Crisis Status
                 </button>
                 <button
                   onClick={() => handleQuickPrompt('What is the best recovery action to restore grid health right now?')}
-                  className="px-2.5 py-1 rounded bg-[var(--surface-bg)] hover:bg-[var(--hover-bg)] border border-[var(--border-color)] text-[var(--text-primary)] shrink-0 transition-colors"
+                  className="px-2.5 py-1 rounded bg-[var(--surface-bg)] hover:bg-[var(--hover-bg)] border border-[var(--border-color)] text-[var(--text-primary)] shrink-0 transition-colors cursor-pointer"
                 >
                   💡 Best Recovery
                 </button>
                 <button
                   onClick={() => handleQuickPrompt('Explain the cascade failure chain from Central Substation to Metro Hospital.')}
-                  className="px-2.5 py-1 rounded bg-[var(--surface-bg)] hover:bg-[var(--hover-bg)] border border-[var(--border-color)] text-[var(--text-primary)] shrink-0 transition-colors"
+                  className="px-2.5 py-1 rounded bg-[var(--surface-bg)] hover:bg-[var(--hover-bg)] border border-[var(--border-color)] text-[var(--text-primary)] shrink-0 transition-colors cursor-pointer"
                 >
                   🏥 Hospital Chain
                 </button>
                 <button
                   onClick={() => handleQuickPrompt('What is SCADA telemetry and how does it prevent cascading blackouts?')}
-                  className="px-2.5 py-1 rounded bg-[var(--surface-bg)] hover:bg-[var(--hover-bg)] border border-[var(--border-color)] text-[var(--text-primary)] shrink-0 transition-colors"
+                  className="px-2.5 py-1 rounded bg-[var(--surface-bg)] hover:bg-[var(--hover-bg)] border border-[var(--border-color)] text-[var(--text-primary)] shrink-0 transition-colors cursor-pointer"
                 >
                   📡 SCADA Principles
                 </button>
@@ -605,14 +577,14 @@ Feel free to ask about specific assets, causal failure chains, recovery recommen
               </div>
               <button
                 onClick={() => setShowKeyModal(false)}
-                className="p-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                className="p-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <p className="text-xs text-[var(--text-secondary)] font-sans">
-              The AI Mission Assistant is pre-configured with Google Gemini 2.5 Flash. You can provide an alternate Gemini API Key below if desired.
+              The AI Mission Assistant is pre-configured with Google Gemini 3.7 Flash. You can provide an alternate Gemini API Key below if desired.
             </p>
 
             <div className="flex flex-col gap-1.5">
@@ -631,13 +603,13 @@ Feel free to ask about specific assets, causal failure chains, recovery recommen
             <div className="flex items-center justify-between pt-3 border-t border-[var(--border-color)] text-xs">
               <button
                 onClick={handleClearApiKey}
-                className="px-3 py-1.5 rounded hover:bg-rose-500/20 text-rose-400 font-bold transition-colors"
+                className="px-3 py-1.5 rounded hover:bg-rose-500/20 text-rose-400 font-bold transition-colors cursor-pointer"
               >
                 Reset Default Key
               </button>
               <button
                 onClick={handleSaveApiKey}
-                className="px-4 py-1.5 rounded bg-[#495464] hover:bg-[#384252] text-white font-bold transition-all shadow-sm"
+                className="px-4 py-1.5 rounded bg-[#495464] hover:bg-[#384252] text-white font-bold transition-all shadow-sm cursor-pointer"
               >
                 Save Key
               </button>
