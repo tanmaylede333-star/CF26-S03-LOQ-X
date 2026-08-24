@@ -11,7 +11,6 @@ import { ScenarioView } from './components/views/ScenarioView';
 import { ImpactAnalysisView } from './components/views/ImpactAnalysisView';
 import { FailureInjectionModal } from './components/failure/FailureInjectionModal';
 import { RecoveryModal } from './components/recovery/RecoveryModal';
-import { ScenarioSelector } from './components/scenarios/ScenarioSelector';
 import { GeminiChatDrawer } from './components/chat/GeminiChatDrawer';
 import { AuthModal } from './components/auth/AuthModal';
 import { AuthService } from './services/authService';
@@ -21,7 +20,6 @@ import { Scenario } from './types/scenario';
 export function App() {
   const [viewMode, setViewMode] = useState<'LANDING' | 'DASHBOARD'>('LANDING');
   const [activeTab, setActiveTab] = useState<ActiveNavTab>('SIMULATOR');
-  const [searchQuery, setSearchQuery] = useState('');
   const [isDark, setIsDark] = useState<boolean>(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -56,7 +54,6 @@ export function App() {
   } = useSimulation(undefined, currentUser?.id);
 
   // Modals state
-  const [isScenarioModalOpen, setIsScenarioModalOpen] = useState(false);
   const [isFailureModalOpen, setIsFailureModalOpen] = useState(false);
   const [isRecoveryModalOpen, setIsRecoveryModalOpen] = useState(false);
 
@@ -151,9 +148,7 @@ export function App() {
           onStart={start}
           onPause={pause}
           onReset={reset}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onOpenScenarioModal={() => setIsScenarioModalOpen(true)}
+          onNavigateToScenarios={() => setActiveTab('SCENARIOS')}
         />
 
         {/* Dynamic View Content (Streamlined 4-View Architecture) */}
@@ -273,13 +268,6 @@ export function App() {
         onClose={() => setIsRecoveryModalOpen(false)}
         state={state}
         onApplyRecovery={applyRecovery}
-      />
-
-      <ScenarioSelector
-        isOpen={isScenarioModalOpen}
-        onClose={() => setIsScenarioModalOpen(false)}
-        currentScenario={activeScenario}
-        onSelectScenario={loadScenario}
       />
     </div>
   );

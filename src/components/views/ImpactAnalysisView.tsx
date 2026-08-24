@@ -33,6 +33,7 @@ import {
   Legend
 } from 'recharts';
 import { SimulationState } from '../../types/simulation';
+import { formatTime } from '../../lib/utils';
 
 interface ImpactAnalysisProps {
   state: SimulationState;
@@ -49,11 +50,18 @@ export const ImpactAnalysisView: React.FC<ImpactAnalysisProps> = ({
   const degradedNodes = state.nodes.filter((n) => n.status === 'DEGRADED');
   const healthyNodes = state.nodes.filter((n) => n.status === 'HEALTHY');
 
-  // 1. Time-series data for Cascade Propagation Curve (Virtual Minute 0 -> 60)
+  // Real-time estimated downtime horizon calculated from active disrupted assets
+  const estimatedDowntimeMinutes = useMemo(() => {
+    const affected = state.nodes.filter((n) => n.status !== 'HEALTHY');
+    if (affected.length === 0) return 0;
+    return Math.max(...affected.map((n) => n.recoveryTime || 15));
+  }, [state.nodes]);
+
+  // 1. Time-series data for Cascade Propagation Curve (Virtual Minute 0 -> maxSimulationTime)
   const propagationData = useMemo(() => {
     const points = [];
     const total = state.nodes.length;
-    const maxTime = state.scenario.parameters.maxSimulationTime || 60;
+    const maxTime = state.scenario.parameters?.maxSimulationTime || 60;
     const currentT = state.scrubTime !== null ? state.scrubTime : state.currentTime;
 
     for (let t = 0; t <= maxTime; t += 5) {
@@ -71,10 +79,14 @@ export const ImpactAnalysisView: React.FC<ImpactAnalysisProps> = ({
         }
       });
 
-      // Factor current runtime if beyond
-      if (t > currentT && currentT > 0) {
-        failed = Math.min(total, failedNodes.length);
-        degraded = Math.min(total - failed, degradedNodes.length);
+      // Clamp to actual node count
+      failed = Math.min(total, failed);
+      degraded = Math.min(total - failed, degraded);
+
+      // If at or past current simulation time, lock to real current node status
+      if (t >= currentT && currentT > 0) {
+        failed = failedNodes.length;
+        degraded = degradedNodes.length;
       }
 
       const healthy = Math.max(0, total - failed - degraded);
@@ -88,7 +100,7 @@ export const ImpactAnalysisView: React.FC<ImpactAnalysisProps> = ({
     }
 
     return points;
-  }, [state.events, state.nodes, state.currentTime, state.scrubTime]);
+  }, [state.events, state.nodes, state.currentTime, state.scrubTime, failedNodes.length, degradedNodes.length]);
 
   // 2. Sector-by-Sector Vulnerability & Health Bar Chart
   const sectorData = useMemo(() => {
@@ -133,10 +145,10 @@ export const ImpactAnalysisView: React.FC<ImpactAnalysisProps> = ({
           </span>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-3xl font-black text-rose-500 font-heading">
-              Level {state.metrics.cascadeDepth || 4}
+              Level {state.metrics.cascadeDepth}
             </span>
             <span className="text-xs text-[var(--text-tertiary)] font-bold font-sans">
-              Critical Multi-Hop
+              {state.metrics.cascadeDepth === 0 ? 'Nominal Baseline' : state.metrics.cascadeDepth === 1 ? 'Direct Failure' : 'Multi-Hop Cascade'}
             </span>
           </div>
         </div>
@@ -148,10 +160,10 @@ export const ImpactAnalysisView: React.FC<ImpactAnalysisProps> = ({
           </span>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-3xl font-black text-amber-400 font-heading">
-              {state.metrics.affectedServices || 14}
+              {state.metrics.affectedServices}
             </span>
             <span className="text-xs text-[var(--text-tertiary)] font-bold font-sans">
-              / {state.metrics.totalNodes} Nodes ({Math.round((state.metrics.affectedServices / state.metrics.totalNodes) * 100)}%)
+              / {state.metrics.totalNodes} Nodes ({state.metrics.totalNodes > 0 ? Math.round((state.metrics.affectedServices / state.metrics.totalNodes) * 100) : 0}%)
             </span>
           </div>
         </div>
@@ -163,10 +175,10 @@ export const ImpactAnalysisView: React.FC<ImpactAnalysisProps> = ({
           </span>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-3xl font-black text-[var(--text-primary)] font-heading">
-              {state.metrics.recoveryTime > 0 ? `${state.metrics.recoveryTime}m` : '4h 12m'}
+              {estimatedDowntimeMinutes > 0 ? `${estimatedDowntimeMinutes}m` : '0m (Nominal)'}
             </span>
             <span className="text-[10px] text-[var(--text-secondary)] font-bold bg-[var(--card-subtle)] px-2 py-0.5 rounded border border-[var(--border-color)]">
-              Optimum Path Active
+              {state.activeRecoveries.length > 0 ? `${state.activeRecoveries.length} Recoveries Active` : 'Standard Dispatch'}
             </span>
           </div>
         </div>
@@ -333,6 +345,16 @@ export const ImpactAnalysisView: React.FC<ImpactAnalysisProps> = ({
                 const rootNodes = rootEvents.length > 0
                   ? rootEvents.map(e => state.nodes.find(n => n.id === e.targetNode)).filter(Boolean)
                   : state.scenario.initialFailures.map(f => state.nodes.find(n => n.id === f.nodeId)).filter(Boolean);
+
+                if (rootNodes.length === 0 && state.events.length === 0) {
+                  return (
+                    <div className="w-full py-6 flex flex-col items-center justify-center text-center text-slate-400 text-xs gap-1">
+                      <Activity className="w-6 h-6 text-emerald-400 mb-1" />
+                      <span className="font-bold text-white">Nominal Steady State</span>
+                      <span className="text-[10px] text-slate-500">No causal failure propagation active. Launch a scenario to observe propagation waves.</span>
+                    </div>
+                  );
+                }
 
                 return (
                   <div className="flex items-center gap-3 min-w-max">

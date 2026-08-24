@@ -22,7 +22,12 @@ import {
   CloudRain,
   ShieldAlert,
   HelpCircle,
-  Wand2
+  Wand2,
+  ChevronDown,
+  ChevronUp,
+  BookmarkPlus,
+  Compass,
+  FileCheck
 } from 'lucide-react';
 import { Scenario, InitialFailure, SimulationParameters } from '../../types/scenario';
 import { PREDEFINED_SCENARIOS } from '../../data/scenarios';
@@ -48,11 +53,11 @@ const SAMPLE_AI_PROMPTS = [
     prompt: 'Extreme heatwave overload tripping central electrical substation and causing widespread traffic signal blackout',
   },
   {
-    title: '🛡️ Cyber SCADA Multi-Point Breach',
-    prompt: 'Coordinated cyber incident simultaneously disrupting telecom cell towers and emergency dispatch telemetry',
+    title: '🛡️ SCADA Telecom Outage',
+    prompt: 'Coordinated infrastructure incident simultaneously disrupting telecom cell towers and emergency dispatch telemetry',
   },
   {
-    title: '⚡ Fuel Depot Supply Shock',
+    title: '⚡ Fuel Supply Rupture',
     prompt: 'Major supply chain rupture at coastal fuel storage hub halting diesel backup deliveries to secondary substations',
   },
 ];
@@ -64,6 +69,7 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
   userId,
 }) => {
   const [activeTab, setActiveTab] = useState<'LIBRARY' | 'BUILDER'>('LIBRARY');
+  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [allScenarios, setAllScenarios] = useState<Scenario[]>(() => [
     ...PREDEFINED_SCENARIOS,
     ...StorageService.getSavedScenarios(),
@@ -79,7 +85,7 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
   // AI Prompt State
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [aiGeneratedNotice, setAiGeneratedNotice] = useState<string | null>(null);
+  const [synthesizedScenario, setSynthesizedScenario] = useState<Scenario | null>(null);
 
   // Builder Form State
   const [scenarioName, setScenarioName] = useState(activeScenario.name);
@@ -98,7 +104,6 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
     if (!text) return;
 
     setIsGenerating(true);
-    setAiGeneratedNotice(null);
 
     setTimeout(() => {
       // Intelligent semantic extraction & node mapping
@@ -191,16 +196,50 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
         });
       }
 
-      // Apply synthesized data to Builder Form
-      setScenarioName(titleName);
-      setScenarioDescription(`AI Synthesized Scenario: "${promptText || aiPrompt}". Targets ${generatedFailures.length} critical infrastructure hubs.`);
-      setScenarioCategory(detectedCategory);
-      setInitialFailures(generatedFailures);
-      setMaxDuration(60);
+      const newScenario: Scenario = {
+        id: `ai-scenario-${Date.now()}`,
+        name: titleName,
+        category: detectedCategory,
+        description: `AI Synthesized Scenario from prompt: "${promptText || aiPrompt}". Validated multi-asset disruption model.`,
+        graphVersion: '2.4.0',
+        isPredefined: false,
+        initialFailures: generatedFailures,
+        parameters: {
+          maxSimulationTime: 60,
+          defaultPropagationDelay: 5,
+          defaultRecoveryDuration: 20,
+        },
+        scheduledRecoveries: [],
+      };
+
+      setSynthesizedScenario(newScenario);
       setIsGenerating(false);
-      setAiGeneratedNotice(`Generated "${titleName}" with ${generatedFailures.length} target failures.`);
-      setActiveTab('BUILDER');
-    }, 600);
+    }, 500);
+  };
+
+  // Actions for Synthesized Scenario
+  const handleReviewInBuilder = (sc: Scenario) => {
+    setScenarioName(sc.name);
+    setScenarioDescription(sc.description);
+    setScenarioCategory(sc.category);
+    setInitialFailures(sc.initialFailures);
+    setMaxDuration(sc.parameters.maxSimulationTime);
+    setActiveTab('BUILDER');
+  };
+
+  const handleAddSynthesizedToLibrary = async (sc: Scenario) => {
+    await ScenarioRepository.saveScenario(sc, userId);
+    const updatedList = await ScenarioRepository.listScenarios(userId);
+    setAllScenarios(updatedList);
+    setSynthesizedScenario(null);
+  };
+
+  const handleLaunchSynthesizedDirectly = async (sc: Scenario) => {
+    await ScenarioRepository.saveScenario(sc, userId);
+    const updatedList = await ScenarioRepository.listScenarios(userId);
+    setAllScenarios(updatedList);
+    onSelectScenario(sc);
+    onLaunchSimulation(sc);
   };
 
   const handleAddFailure = () => {
@@ -228,11 +267,16 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
   };
 
   const handleLaunchCurrentBuilder = async () => {
+    if (!initialFailures || initialFailures.length === 0) {
+      alert('Scenario must contain at least 1 initial failure point.');
+      return;
+    }
+
     const customScenario: Scenario = {
       id: `custom-scenario-${Date.now()}`,
-      name: scenarioName || 'Custom Scenario',
+      name: scenarioName.trim() || 'Custom Scenario',
       category: scenarioCategory,
-      description: scenarioDescription || 'User configured custom simulation scenario',
+      description: scenarioDescription.trim() || 'User configured custom simulation scenario',
       graphVersion: '2.4.0',
       isPredefined: false,
       initialFailures,
@@ -295,43 +339,38 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
         </div>
       </div>
 
-      {/* 2. AI NATURAL LANGUAGE SCENARIO GENERATOR BOX */}
-      <div className="rounded-lg bg-[var(--surface-bg)] border border-[var(--border-color)] p-4 shadow-sm relative overflow-hidden">
-        <div className="flex items-center justify-between pb-3 border-b border-[var(--border-color)]">
+      {/* 2. COMPACT AI NATURAL LANGUAGE SCENARIO GENERATOR BOX */}
+      <div className="rounded-lg bg-[var(--surface-bg)] border border-[var(--border-color)] p-3.5 shadow-sm relative overflow-hidden flex flex-col gap-3">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-[#495464] border border-[#BBBFCA] flex items-center justify-center text-white">
+            <div className="w-6 h-6 rounded bg-[#495464] border border-[#BBBFCA] flex items-center justify-center text-white shrink-0">
               <Sparkles className="w-3.5 h-3.5 animate-pulse" />
             </div>
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
-                AI Natural Language Scenario Synthesizer
+                AI Scenario Synthesizer
               </span>
               <span className="text-[10px] text-[var(--text-secondary)] block">
-                Type a disaster premise to generate an instant cascade topology configuration.
+                Type an incident premise to generate a validated cascade topology configuration.
               </span>
             </div>
           </div>
-          {aiGeneratedNotice && (
-            <span className="text-[11px] text-[var(--text-primary)] font-bold bg-[#BBBFCA]/30 border border-[#BBBFCA] px-2.5 py-0.5 rounded">
-              ✓ {aiGeneratedNotice}
-            </span>
-          )}
         </div>
 
         {/* Input & Action */}
-        <div className="mt-3 flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <input
             type="text"
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerateAIScenario()}
             placeholder="e.g. Severe cyclone flooding water pump stations and causing hospital ICU power outages..."
-            className="flex-1 px-3.5 py-2 rounded bg-[var(--card-subtle)] border border-[var(--border-color)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-[#495464] focus:outline-none"
+            className="flex-1 px-3 py-1.5 rounded bg-[var(--card-subtle)] border border-[var(--border-color)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-[#495464] focus:outline-none"
           />
           <button
             onClick={() => handleGenerateAIScenario()}
             disabled={isGenerating || !aiPrompt.trim()}
-            className="px-5 py-2 rounded bg-[#495464] hover:bg-[#334155] disabled:opacity-40 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-[2px_2px_0px_#1e293b] shrink-0"
+            className="px-4 py-1.5 rounded bg-[#495464] hover:bg-[#334155] disabled:opacity-40 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm shrink-0"
           >
             {isGenerating ? (
               <Wand2 className="w-3.5 h-3.5 animate-spin" />
@@ -343,7 +382,7 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
         </div>
 
         {/* Quick Sample Prompts */}
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
           <span className="text-[10px] text-[var(--text-secondary)] font-semibold uppercase">
             Prompt Chips:
           </span>
@@ -354,19 +393,85 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
                 setAiPrompt(sample.prompt);
                 handleGenerateAIScenario(sample.prompt);
               }}
-              className="px-2.5 py-1 rounded bg-[var(--card-subtle)] hover:bg-[var(--surface-bg)] border border-[var(--border-color)] text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#495464] transition-all flex items-center gap-1"
+              className="px-2 py-0.5 rounded bg-[var(--card-subtle)] hover:bg-[var(--surface-bg)] border border-[var(--border-color)] text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[#495464] transition-all flex items-center gap-1"
             >
               <span>{sample.title}</span>
             </button>
           ))}
         </div>
+
+        {/* AI GENERATED DEFINITION PREVIEW CARD */}
+        {synthesizedScenario && (
+          <div className="mt-1 p-3 rounded-lg bg-[var(--card-subtle)] border border-[#495464] flex flex-col gap-2.5 animate-fadeIn">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] px-2 py-0.5 rounded font-bold uppercase bg-emerald-950 text-emerald-300 border border-emerald-700">
+                  AI SYNTHESIZED DEFINITION
+                </span>
+                <span className="text-xs font-bold text-white">
+                  {synthesizedScenario.name}
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400 font-mono">
+                TMax: {synthesizedScenario.parameters.maxSimulationTime}m • Failures: {synthesizedScenario.initialFailures.length}
+              </span>
+            </div>
+
+            <p className="text-[11px] text-slate-300 leading-relaxed">
+              {synthesizedScenario.description}
+            </p>
+
+            {/* Target Nodes Breakdown */}
+            <div className="flex flex-wrap gap-1.5">
+              {synthesizedScenario.initialFailures.map((f, i) => {
+                const node = INITIAL_CITY_NODES.find((n) => n.id === f.nodeId);
+                return (
+                  <span
+                    key={i}
+                    className="text-[9px] px-2 py-0.5 rounded bg-[var(--surface-bg)] border border-[var(--border-color)] text-rose-300 font-mono"
+                  >
+                    T+{f.time}m: {node?.code || f.nodeId} ({f.severity}) — {f.reason}
+                  </span>
+                );
+              })}
+            </div>
+
+            {/* 3 Explicit Validated Actions */}
+            <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[var(--border-color)]">
+              <button
+                onClick={() => handleReviewInBuilder(synthesizedScenario)}
+                className="px-3 py-1.5 rounded bg-[var(--surface-bg)] hover:bg-[var(--card-subtle)] border border-[var(--border-color)] text-white text-xs font-bold transition-all flex items-center gap-1.5"
+              >
+                <Sliders className="w-3.5 h-3.5 text-amber-400" />
+                <span>Review in Builder</span>
+              </button>
+
+              <button
+                onClick={() => handleAddSynthesizedToLibrary(synthesizedScenario)}
+                className="px-3 py-1.5 rounded bg-[var(--surface-bg)] hover:bg-[var(--card-subtle)] border border-[var(--border-color)] text-white text-xs font-bold transition-all flex items-center gap-1.5"
+              >
+                <BookmarkPlus className="w-3.5 h-3.5 text-blue-400" />
+                <span>Add to Library</span>
+              </button>
+
+              <button
+                onClick={() => handleLaunchSynthesizedDirectly(synthesizedScenario)}
+                className="px-4 py-1.5 rounded bg-[#495464] hover:bg-[#334155] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 ml-auto border border-[#1e293b]"
+              >
+                <Play className="w-3.5 h-3.5 fill-white" />
+                <span>Launch Simulator</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* 3. SCENARIO LIBRARY TAB CONTENT */}
+      {/* 3. SCENARIO LIBRARY TAB CONTENT WITH PROGRESSIVE DISCLOSURE ACCORDIONS */}
       {activeTab === 'LIBRARY' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {allScenarios.map((sc) => {
             const isCurrent = activeScenario.id === sc.id;
+            const isExpanded = expandedCardId === sc.id;
 
             return (
               <div
@@ -383,6 +488,8 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
                       className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase ${
                         sc.category === 'POWER'
                           ? 'bg-amber-950 text-amber-400 border border-amber-800'
+                          : sc.category === 'WATER'
+                          ? 'bg-cyan-950 text-cyan-400 border border-cyan-800'
                           : sc.category === 'WEATHER'
                           ? 'bg-blue-950 text-blue-400 border border-blue-800'
                           : sc.category === 'DUAL_FAILURE'
@@ -414,18 +521,60 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
                     {sc.name}
                   </h3>
 
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed line-clamp-3">
+                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed line-clamp-2">
                     {sc.description}
                   </p>
 
-                  <div className="mt-2 pt-2 border-t border-[var(--border-color)] flex items-center justify-between text-[10px] text-[var(--text-secondary)]">
+                  {/* Summary Bar */}
+                  <div className="mt-1 pt-2 border-t border-[var(--border-color)] flex items-center justify-between text-[10px] text-[var(--text-secondary)]">
                     <span>
                       Failures: <strong className="text-rose-400">{sc.initialFailures.length} Nodes</strong>
                     </span>
-                    <span>
-                      Version: <strong className="text-[var(--text-primary)]">{sc.graphVersion}</strong>
-                    </span>
+                    <button
+                      onClick={() => setExpandedCardId(isExpanded ? null : sc.id)}
+                      className="text-slate-300 hover:text-white flex items-center gap-0.5 text-[10px] font-bold underline"
+                    >
+                      <span>{isExpanded ? 'Hide Details' : 'View Target Details'}</span>
+                      {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    </button>
                   </div>
+
+                  {/* Progressive Disclosure Details Accordion */}
+                  {isExpanded && (
+                    <div className="p-2.5 rounded bg-[var(--card-subtle)] border border-[var(--border-color)] flex flex-col gap-2 text-[10px] animate-fadeIn mt-1">
+                      <span className="font-bold text-slate-300 uppercase tracking-wider">
+                        Initial Disruption Targets:
+                      </span>
+                      <div className="space-y-1">
+                        {sc.initialFailures.map((f, idx) => {
+                          const targetNode = INITIAL_CITY_NODES.find((n) => n.id === f.nodeId);
+                          return (
+                            <div key={idx} className="flex flex-col text-[10px] border-b border-[var(--border-color)]/60 pb-1 last:border-0 last:pb-0">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-rose-300">
+                                  T+{f.time}m: {targetNode ? `${targetNode.code} — ${targetNode.name}` : f.nodeId}
+                                </span>
+                                <span className="text-rose-400 font-mono text-[9px] uppercase">
+                                  {f.severity}
+                                </span>
+                              </div>
+                              {f.reason && (
+                                <span className="text-slate-400 text-[9px] italic">
+                                  Cause: {f.reason}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {sc.scheduledRecoveries && sc.scheduledRecoveries.length > 0 && (
+                        <div className="pt-1 border-t border-[var(--border-color)] text-emerald-300 text-[9px]">
+                          Scheduled Recoveries: {sc.scheduledRecoveries.length} automated interventions
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2 pt-2">

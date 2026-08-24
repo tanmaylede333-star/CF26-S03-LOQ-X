@@ -11,7 +11,7 @@ export const INITIAL_CITY_NODES: InfrastructureNode[] = [
     criticality: "CRITICAL",
     status: "HEALTHY",
     recoveryTime: 25,
-    position: { x: 480, y: 40 },
+    position: { x: 520, y: 40 },
     coordinates: { lat: 19.0830, lng: 72.8620 },
     description: "High-voltage transmission hub powering North & Central sectors including primary pumps, comms, and medical hubs.",
     metrics: { load: 88, affectedCitizens: 450000, backupAvailable: false, backupActive: false }
@@ -25,7 +25,7 @@ export const INITIAL_CITY_NODES: InfrastructureNode[] = [
     criticality: "HIGH",
     status: "HEALTHY",
     recoveryTime: 15,
-    position: { x: 180, y: 190 },
+    position: { x: 120, y: 200 },
     coordinates: { lat: 19.0980, lng: 72.8710 },
     description: "Main intake turbine lifting raw water to treatment reservoirs. Totally dependent on 33kV electrical feed.",
     metrics: { load: 74, affectedCitizens: 320000, backupAvailable: true, backupActive: false }
@@ -39,7 +39,7 @@ export const INITIAL_CITY_NODES: InfrastructureNode[] = [
     criticality: "HIGH",
     status: "HEALTHY",
     recoveryTime: 12,
-    position: { x: 180, y: 350 },
+    position: { x: 120, y: 380 },
     coordinates: { lat: 19.0820, lng: 72.9050 },
     description: "Pressurized municipal pipeline supplying civic infrastructure, fire hydrants, and tertiary hospitals.",
     metrics: { load: 82, affectedCitizens: 320000, backupAvailable: false, backupActive: false }
@@ -53,7 +53,7 @@ export const INITIAL_CITY_NODES: InfrastructureNode[] = [
     criticality: "MEDIUM",
     status: "HEALTHY",
     recoveryTime: 10,
-    position: { x: 480, y: 190 },
+    position: { x: 400, y: 200 },
     coordinates: { lat: 19.0890, lng: 72.8680 },
     description: "Automated adaptive traffic signal grid managing emergency green corridors and major intersections.",
     metrics: { load: 91, affectedCitizens: 180000, backupAvailable: true, backupActive: false }
@@ -67,7 +67,7 @@ export const INITIAL_CITY_NODES: InfrastructureNode[] = [
     criticality: "HIGH",
     status: "HEALTHY",
     recoveryTime: 20,
-    position: { x: 780, y: 190 },
+    position: { x: 680, y: 200 },
     coordinates: { lat: 19.0770, lng: 72.9120 },
     description: "Core packet exchange & microwave transmission tower handling emergency 112 data and civic telemetry.",
     metrics: { load: 80, affectedCitizens: 520000, backupAvailable: true, backupActive: false }
@@ -81,7 +81,7 @@ export const INITIAL_CITY_NODES: InfrastructureNode[] = [
     criticality: "MEDIUM",
     status: "HEALTHY",
     recoveryTime: 18,
-    position: { x: 1040, y: 190 },
+    position: { x: 960, y: 200 },
     coordinates: { lat: 19.0380, lng: 72.8850 },
     description: "Wastewater processing and stormwater drainage station.",
     metrics: { load: 60, affectedCitizens: 120000, backupAvailable: false, backupActive: false }
@@ -95,7 +95,7 @@ export const INITIAL_CITY_NODES: InfrastructureNode[] = [
     criticality: "CRITICAL",
     status: "HEALTHY",
     recoveryTime: 15,
-    position: { x: 780, y: 350 },
+    position: { x: 680, y: 380 },
     coordinates: { lat: 19.0840, lng: 72.8760 },
     description: "Central command routing police, ambulance, and disaster response units across JanNagar.",
     metrics: { load: 65, affectedCitizens: 650000, backupAvailable: true, backupActive: false }
@@ -109,7 +109,7 @@ export const INITIAL_CITY_NODES: InfrastructureNode[] = [
     criticality: "MEDIUM",
     status: "HEALTHY",
     recoveryTime: 14,
-    position: { x: 1040, y: 350 },
+    position: { x: 960, y: 380 },
     coordinates: { lat: 19.0550, lng: 72.8380 },
     description: "Automated diesel and gasoline pumping reserve for emergency vehicles, buses, and backup generators.",
     metrics: { load: 50, affectedCitizens: 90000, backupAvailable: true, backupActive: false }
@@ -123,7 +123,7 @@ export const INITIAL_CITY_NODES: InfrastructureNode[] = [
     criticality: "CRITICAL",
     status: "HEALTHY",
     recoveryTime: 20,
-    position: { x: 340, y: 490 },
+    position: { x: 260, y: 540 },
     coordinates: { lat: 19.0910, lng: 72.8820 },
     description: "1,200-bed trauma center with ICUs and surgical suites requiring uninterrupted power, water, and dispatch lines.",
     metrics: { load: 95, affectedCitizens: 45000, backupAvailable: true, backupActive: false }
@@ -137,10 +137,38 @@ export const INITIAL_CITY_NODES: InfrastructureNode[] = [
     criticality: "MEDIUM",
     status: "HEALTHY",
     recoveryTime: 16,
-    position: { x: 620, y: 490 },
+    position: { x: 520, y: 540 },
     coordinates: { lat: 19.0680, lng: 72.8590 },
     description: "Electric metro rail lines and municipal bus fleet servicing 300k daily commuters.",
     metrics: { load: 85, affectedCitizens: 300000, backupAvailable: false, backupActive: false }
+  },
+  {
+    id: "sewage-outfall-02",
+    code: "S02",
+    name: "East Stormwater Outfall & Siphon",
+    type: "SEWAGE",
+    zone: "Sector 3 — Mankhurd Marsh",
+    criticality: "MEDIUM",
+    status: "HEALTHY",
+    recoveryTime: 15,
+    position: { x: 960, y: 540 },
+    coordinates: { lat: 19.0520, lng: 72.9080 },
+    description: "Stormwater runoff management station protecting low-lying eastern districts.",
+    metrics: { load: 55, affectedCitizens: 180000, backupAvailable: false, backupActive: false }
+  },
+  {
+    id: "hospital-trauma-02",
+    code: "H02",
+    name: "East Suburban Trauma Center",
+    type: "HOSPITAL",
+    zone: "Sector 3 — Ghatkopar East",
+    criticality: "HIGH",
+    status: "HEALTHY",
+    recoveryTime: 18,
+    position: { x: 260, y: 700 },
+    coordinates: { lat: 19.0790, lng: 72.8990 },
+    description: "Secondary trauma center supporting eastern urban population.",
+    metrics: { load: 80, affectedCitizens: 120000, backupAvailable: true, backupActive: false }
   },
   {
     id: "municipal-control-01",
@@ -151,7 +179,7 @@ export const INITIAL_CITY_NODES: InfrastructureNode[] = [
     criticality: "HIGH",
     status: "HEALTHY",
     recoveryTime: 15,
-    position: { x: 480, y: 640 },
+    position: { x: 520, y: 700 },
     coordinates: { lat: 19.0850, lng: 72.8870 },
     description: "Master civic resilience center coordinating citywide disaster protocols and inter-agency recovery.",
     metrics: { load: 70, affectedCitizens: 800000, backupAvailable: true, backupActive: false }
@@ -165,38 +193,10 @@ export const INITIAL_CITY_NODES: InfrastructureNode[] = [
     criticality: "HIGH",
     status: "HEALTHY",
     recoveryTime: 15,
-    position: { x: 480, y: 780 },
+    position: { x: 520, y: 840 },
     coordinates: { lat: 19.1060, lng: 72.8880 },
     description: "Secondary civic failover repository and cloud resilience hub.",
     metrics: { load: 62, affectedCitizens: 420000, backupAvailable: true, backupActive: false }
-  },
-  {
-    id: "hospital-trauma-02",
-    code: "H02",
-    name: "East Suburban Trauma Center",
-    type: "HOSPITAL",
-    zone: "Sector 3 — Ghatkopar East",
-    criticality: "HIGH",
-    status: "HEALTHY",
-    recoveryTime: 18,
-    position: { x: 340, y: 640 },
-    coordinates: { lat: 19.0790, lng: 72.8990 },
-    description: "Secondary trauma center supporting eastern urban population.",
-    metrics: { load: 80, affectedCitizens: 120000, backupAvailable: true, backupActive: false }
-  },
-  {
-    id: "sewage-outfall-02",
-    code: "S02",
-    name: "East Stormwater Outfall & Siphon",
-    type: "SEWAGE",
-    zone: "Sector 3 — Mankhurd Marsh",
-    criticality: "MEDIUM",
-    status: "HEALTHY",
-    recoveryTime: 15,
-    position: { x: 1040, y: 490 },
-    coordinates: { lat: 19.0520, lng: 72.9080 },
-    description: "Stormwater runoff management station protecting low-lying eastern districts.",
-    metrics: { load: 55, affectedCitizens: 180000, backupAvailable: false, backupActive: false }
   }
 ];
 

@@ -97,12 +97,20 @@ export function useSimulation(
   }, [syncState]);
 
   const reset = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
     if (!engineRef.current) return;
     engineRef.current.reset();
     syncState();
   }, [syncState]);
 
   const replay = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
     if (!engineRef.current) return;
     engineRef.current.reset();
     engineRef.current.resume();
@@ -197,6 +205,10 @@ export function useSimulation(
   }, [syncState]);
 
   const loadScenario = useCallback((scenario: Scenario) => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
     setActiveScenario(scenario);
     engineRef.current = new SimulationEngine(
       scenario,
