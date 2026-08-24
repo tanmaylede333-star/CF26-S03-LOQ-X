@@ -11,7 +11,6 @@ import { ScenarioView } from './components/views/ScenarioView';
 import { ImpactAnalysisView } from './components/views/ImpactAnalysisView';
 import { FailureInjectionModal } from './components/failure/FailureInjectionModal';
 import { RecoveryModal } from './components/recovery/RecoveryModal';
-import { GeminiChatDrawer } from './components/chat/GeminiChatDrawer';
 import { AuthModal } from './components/auth/AuthModal';
 import { AuthService } from './services/authService';
 import { useSimulation } from './hooks/useSimulation';
@@ -240,13 +239,6 @@ export function App() {
           </div>
         </footer>
       </div>
-
-      {/* Floating Gemini Operator Copilot Drawer */}
-      <GeminiChatDrawer
-        state={state}
-        onApplyRecovery={applyRecovery}
-        onSelectNode={(id) => setSelectedNodeId(id)}
-      />
 
       {/* Interactive Modals */}
       <AuthModal
