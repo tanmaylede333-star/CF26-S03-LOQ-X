@@ -1,0 +1,609 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --transDur: 0.3s;
+    --primary: #495464;
+    --primaryT: rgba(73, 84, 100, 0.25);
+    
+    /* Dark Theme Tokens (Deep Slate #495464 with #BBBFCA borders) */
+    --app-bg: #1b2028;
+    --sidebar-bg: #232a35;
+    --surface-bg: #2b3442;
+    --card-subtle: #151a22;
+    --border-color: #495464;
+    --text-primary: #F4F4F2;
+    --text-secondary: #BBBFCA;
+    --text-tertiary: #8794a6;
+    --accent: #BBBFCA;
+    --accent-dark: #1b2028;
+  }
+
+  html.light,
+  [data-theme="light"] {
+    /* Light Theme Tokens (#F4F4F2, #E8E8E8, #BBBFCA, #495464) */
+    --app-bg: #F4F4F2;
+    --sidebar-bg: #E8E8E8;
+    --surface-bg: #ffffff;
+    --card-subtle: #E8E8E8;
+    --border-color: #BBBFCA;
+    --text-primary: #495464;
+    --text-secondary: #5e6c7e;
+    --text-tertiary: #8492a3;
+    --accent: #495464;
+    --accent-dark: #F4F4F2;
+  }
+}
+
+body,
+p,
+span,
+label,
+input,
+button,
+select,
+textarea {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+  background-color: var(--app-bg);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
+  letter-spacing: -0.01em;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-heading,
+.font-headline-md,
+.font-headline-lg,
+.uiverse-title {
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif !important;
+  letter-spacing: -0.02em;
+}
+
+.font-mono,
+.font-telemetry-label,
+.font-telemetry-data,
+.font-timestamp,
+code,
+pre,
+kbd {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-feature-settings: "tnum" 1, "zero" 1;
+}
+
+/* Subtle scanline overlay for tactile engineering feel */
+.scanlines {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0) 50%,
+    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0.1)
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+}
+
+/* Linear-style tactile glass panels */
+.glass-panel {
+  background: var(--surface-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+}
+
+/* Precision grid background */
+.cyber-grid {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+}
+
+html.light .cyber-grid {
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+}
+
+/* Sleek custom scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: var(--app-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Leaflet Titanium Customization */
+.leaflet-container {
+  background: var(--card-subtle) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: var(--surface-bg) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+  padding: 0 !important;
+}
+
+.leaflet-popup-tip {
+  background: var(--surface-bg) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.leaflet-control-zoom a {
+  background-color: var(--surface-bg) !important;
+  color: var(--accent) !important;
+  border-color: var(--border-color) !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.leaflet-control-attribution {
+  background: var(--surface-bg) !important;
+  color: var(--text-secondary) !important;
+  font-size: 9px !important;
+}
+
+/* React Flow controls styling */
+.react-flow__background {
+  background-color: transparent !important;
+}
+
+.react-flow__controls {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 6px !important;
+  overflow: hidden !important;
+  background: var(--surface-bg) !important;
+}
+
+.react-flow__controls-button {
+  background: transparent !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  color: var(--text-secondary) !important;
+  fill: var(--text-secondary) !important;
+}
+
+.react-flow__controls-button:hover {
+  background: rgba(0, 245, 160, 0.15) !important;
+  color: var(--accent) !important;
+  fill: var(--accent) !important;
+}
+
+.react-flow__attribution {
+  display: none !important;
+}
+
+/* Animated node pulse halos */
+@keyframes halo-coral {
+  0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); }
+  70% { box-shadow: 0 0 0 14px rgba(244, 63, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+}
+
+@keyframes halo-gold {
+  0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7); }
+  70% { box-shadow: 0 0 0 12px rgba(251, 191, 36, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+}
+
+@keyframes halo-mint {
+  0% { box-shadow: 0 0 0 0 rgba(0, 245, 160, 0.7); }
+  70% { box-shadow: 0 0 0 12px rgba(0, 245, 160, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 245, 160, 0); }
+}
+
+.pulse-failed {
+  animation: halo-coral 1.8s infinite;
+}
+
+.pulse-degraded {
+  animation: halo-gold 2s infinite;
+}
+
+.pulse-recovering {
+  animation: halo-mint 1.6s infinite;
+}
+
+/* ========================================================
+   LIGHT MODE COMPONENT & COLOR PALETTE OVERRIDES
+   ======================================================== */
+html.light body {
+  background-color: #f4f6f9 !important;
+  color: #090d16 !important;
+}
+
+html.light aside {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light header {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light footer {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Background surfaces */
+html.light .bg-\[\#0f1117\],
+html.light .bg-\[\#07090e\],
+html.light .bg-\[\#0a0e17\] {
+  background-color: #f4f6f9 !important;
+}
+
+html.light .bg-\[\#11131a\],
+html.light .bg-\[\#0a0d14\] {
+  background-color: #ffffff !important;
+}
+
+html.light .bg-\[\#161922\],
+html.light .bg-\[\#0d111a\],
+html.light .bg-\[\#1e212b\],
+html.light .bg-\[\#1e1f2b\],
+html.light .bg-\[\#1a1e29\] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light .bg-\[\#0b0d13\],
+html.light .bg-\[\#090d16\] {
+  background-color: #f8fafc !important;
+}
+
+/* Borders */
+html.light .border-\[\#262a38\],
+html.light .border-\[\#1a2233\],
+html.light .border-\[\#1e293b\],
+html.light .border-\[\#333a4d\] {
+  border-color: #e2e8f0 !important;
+}
+
+/* Typography High-Contrast */
+html.light .text-\[\#f1f5f9\],
+html.light .text-slate-100,
+html.light .text-slate-200 {
+  color: #090d16 !important;
+}
+
+html.light .text-slate-300 {
+  color: #1e293b !important;
+}
+
+html.light .text-slate-400 {
+  color: #334155 !important;
+}
+
+html.light .text-slate-500 {
+  color: #64748b !important;
+}
+
+/* React Flow Nodes Status Overrides in Light Mode */
+html.light .bg-\[\#161922\]\/95 {
+  background-color: #ffffff !important;
+}
+
+html.light .bg-\[\#281016\]\/95 {
+  background-color: #fff1f2 !important;
+  border-color: #f43f5e !important;
+}
+
+html.light .bg-\[\#241c10\]\/95,
+html.light .bg-\[\#1e1c14\]\/95 {
+  background-color: #fffbeb !important;
+  border-color: #f59e0b !important;
+}
+
+html.light .bg-\[\#0d211a\]\/95 {
+  background-color: #ecfdf5 !important;
+  border-color: #10b981 !important;
+}
+
+/* Status Badges in Light Mode */
+html.light .bg-emerald-950,
+html.light .bg-emerald-950\/40,
+html.light .bg-emerald-950\/60,
+html.light .bg-emerald-950\/80,
+html.light .bg-emerald-950\/90 {
+  background-color: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+}
+
+html.light .bg-amber-950,
+html.light .bg-amber-950\/40,
+html.light .bg-amber-950\/60,
+html.light .bg-amber-950\/80,
+html.light .bg-amber-950\/90 {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
+}
+
+html.light .bg-rose-950,
+html.light .bg-rose-950\/40,
+html.light .bg-rose-950\/60,
+html.light .bg-rose-950\/80,
+html.light .bg-rose-950\/90 {
+  background-color: #fff1f2 !important;
+  border-color: #fecdd3 !important;
+}
+
+html.light .text-emerald-400 {
+  color: #047857 !important;
+}
+
+html.light .text-amber-400 {
+  color: #b45309 !important;
+}
+
+html.light .text-rose-400 {
+  color: #be123c !important;
+}
+
+/* Inputs & Form Controls in Light Mode */
+html.light input,
+html.light select,
+html.light textarea {
+  background-color: #ffffff !important;
+  color: #495464 !important;
+  border-color: #BBBFCA !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #8492a3 !important;
+}
+
+/* Maintain crisp text on buttons */
+html.light .bg-emerald-400 {
+  background-color: #495464 !important;
+  color: #F4F4F2 !important;
+}
+
+/* ========================================================
+   UIVERSE ANIMATED DARK / LIGHT MODE SWITCH (SUN / MOON MORPH)
+   ======================================================== */
+.theme {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  --transDur: 0.35s;
+}
+
+.theme__toggle-wrap {
+  position: relative;
+  display: inline-block;
+  margin: 0;
+}
+
+.theme__toggle {
+  position: relative;
+  display: block;
+  width: 4.8em;
+  height: 2.4em;
+  background-color: #BBBFCA;
+  border-radius: 1.2em;
+  cursor: pointer;
+  box-shadow: inset 0 0 0.1em 0.1em rgba(0, 0, 0, 0.2), inset 0 0 0.4em rgba(0, 0, 0, 0.25);
+  transition: background-color var(--transDur) ease;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.theme__icon {
+  position: absolute;
+  top: 0.2em;
+  left: 0.2em;
+  width: 2em;
+  height: 2em;
+  pointer-events: none;
+  transition: transform var(--transDur) cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.theme__fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: #495464;
+  box-shadow: 0 0 0.4em #495464;
+  transition: background-color var(--transDur) ease, box-shadow var(--transDur) ease, transform var(--transDur) ease;
+}
+
+.theme__icon-part {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.24em;
+  height: 0.24em;
+  background-color: #495464;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: transform var(--transDur) ease, opacity var(--transDur) ease;
+}
+
+/* 8 Sun Rays */
+.theme__icon-part:nth-child(2) { transform: translate(-50%, -50%) rotate(0deg) translateY(-1.35em); }
+.theme__icon-part:nth-child(3) { transform: translate(-50%, -50%) rotate(45deg) translateY(-1.35em); }
+.theme__icon-part:nth-child(4) { transform: translate(-50%, -50%) rotate(90deg) translateY(-1.35em); }
+.theme__icon-part:nth-child(5) { transform: translate(-50%, -50%) rotate(135deg) translateY(-1.35em); }
+.theme__icon-part:nth-child(6) { transform: translate(-50%, -50%) rotate(180deg) translateY(-1.35em); }
+.theme__icon-part:nth-child(7) { transform: translate(-50%, -50%) rotate(225deg) translateY(-1.35em); }
+.theme__icon-part:nth-child(8) { transform: translate(-50%, -50%) rotate(270deg) translateY(-1.35em); }
+.theme__icon-part:nth-child(9) { transform: translate(-50%, -50%) rotate(315deg) translateY(-1.35em); }
+
+/* Sun rays collapse and hide during Dark Mode */
+.theme__toggle:checked ~ .theme__icon .theme__icon-part {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0);
+}
+
+/* In Dark Mode (checked): Slide knob to right, form Moon crescent */
+.theme__toggle:checked {
+  background-color: #1b2028;
+}
+
+.theme__toggle:checked ~ .theme__icon {
+  transform: translateX(2.4em);
+}
+
+.theme__toggle:checked ~ .theme__icon .theme__fill {
+  background-color: #BBBFCA;
+  box-shadow: inset 0.55em -0.55em 0 0 #495464, 0 0 0.8em rgba(255, 255, 255, 0.15);
+  transform: translate(-20%, -35%) scale(0.75);
+}
+
+/* ========================================================
+   UIVERSE NEO-BRUTALIST AUTH MODAL (by andrew-demchenk0)
+   ======================================================== */
+.uiverse-auth-form {
+  --input-focus: #495464;
+  --font-color: #495464;
+  --font-color-sub: #8492a3;
+  --bg-color: #ffffff;
+  --main-color: #495464;
+  padding: 28px 28px 24px 28px;
+  background: #E8E8E8;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 16px;
+  border-radius: 8px;
+  border: 2.5px solid var(--main-color);
+  box-shadow: 6px 6px 0px var(--main-color);
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+}
+
+.uiverse-title {
+  color: var(--font-color);
+  font-weight: 900;
+  font-size: 22px;
+  line-height: 1.15;
+  text-align: left;
+  margin-bottom: 6px;
+}
+
+.uiverse-title span {
+  color: var(--font-color-sub);
+  font-weight: 600;
+  font-size: 15px;
+  display: block;
+  margin-top: 4px;
+}
+
+.uiverse-input {
+  width: 100%;
+  height: 42px;
+  border-radius: 6px;
+  border: 2px solid var(--main-color);
+  background-color: var(--bg-color);
+  box-shadow: 4px 4px 0px var(--main-color);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--font-color);
+  padding: 8px 12px;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.uiverse-input::placeholder {
+  color: var(--font-color-sub);
+  opacity: 0.85;
+  font-weight: 500;
+}
+
+.uiverse-input:focus {
+  border: 2px solid var(--input-focus);
+  box-shadow: 4px 4px 0px var(--input-focus);
+}
+
+.uiverse-login-with {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.uiverse-button-log {
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 100%;
+  border: 2px solid var(--main-color);
+  background-color: var(--bg-color);
+  box-shadow: 4px 4px 0px var(--main-color);
+  color: var(--font-color);
+  font-size: 18px;
+  font-weight: 900;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.1s ease;
+}
+
+.uiverse-button-log:active, 
+.uiverse-button-confirm:active {
+  box-shadow: 0px 0px var(--main-color) !important;
+  transform: translate(3px, 3px);
+}
+
+.uiverse-button-confirm {
+  margin: 14px auto 0 auto;
+  width: 130px;
+  height: 42px;
+  border-radius: 6px;
+  border: 2px solid var(--main-color);
+  background-color: var(--bg-color);
+  box-shadow: 4px 4px 0px var(--main-color);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--font-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.1s ease;
+}
+
+.uiverse-button-confirm:hover {
+  background-color: #f8fafc;
+}
+
