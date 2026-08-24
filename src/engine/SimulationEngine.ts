@@ -343,17 +343,30 @@ export class SimulationEngine {
       if (runtime) runtime.backupActive = true;
     }
 
-    // Immediately reflect RECOVERING state in runtime if recovery starts at or before current timestamp
-    if (runtime && action.startTime <= this.currentTime && action.duration > 0) {
-      runtime.previousStatus = runtime.status;
-      runtime.status = "RECOVERING";
-      runtime.recoveryStartedAt = this.currentTime;
-      if (!runtime.stateHistory) runtime.stateHistory = [];
-      runtime.stateHistory.push({
-        time: this.currentTime,
-        status: "RECOVERING",
-        reason: action.description || `${action.type.replace(/_/g, ' ')} initiated`,
-      });
+    // Immediately reflect state transition in runtime
+    if (runtime && action.startTime <= this.currentTime) {
+      if (action.duration > 0) {
+        runtime.previousStatus = runtime.status;
+        runtime.status = "RECOVERING";
+        runtime.recoveryStartedAt = this.currentTime;
+        if (!runtime.stateHistory) runtime.stateHistory = [];
+        runtime.stateHistory.push({
+          time: this.currentTime,
+          status: "RECOVERING",
+          reason: action.description || `${action.type.replace(/_/g, ' ')} initiated`,
+        });
+      } else {
+        runtime.previousStatus = runtime.status;
+        runtime.status = "HEALTHY";
+        runtime.recoveredAt = this.currentTime;
+        if (!runtime.stateHistory) runtime.stateHistory = [];
+        runtime.stateHistory.push({
+          time: this.currentTime,
+          status: "HEALTHY",
+          reason: action.description || `${action.type.replace(/_/g, ' ')} completed`,
+        });
+        this.checkDownstreamRecovery(action.nodeId);
+      }
     }
 
     const { startEvent, completeEvent } = RecoveryManager.createRecoveryEvents(
@@ -370,7 +383,7 @@ export class SimulationEngine {
       this.activeRecoveries = this.activeRecoveries.filter(r => r.nodeId !== action.nodeId);
       this.activeRecoveries.push({
         ...action,
-        status: "IN_PROGRESS"
+        status: action.duration === 0 ? ("COMPLETED" as const) : ("IN_PROGRESS" as const),
       });
     }
 
@@ -378,7 +391,7 @@ export class SimulationEngine {
     if (action.startTime + action.duration >= this.scenario.parameters.maxSimulationTime) {
       this.scenario.parameters.maxSimulationTime = action.startTime + action.duration + 45;
     }
-    if (this.status === "COMPLETED") {
+    if (this.status === "COMPLETED" || this.status === "IDLE" || this.status === "PAUSED") {
       this.status = "RUNNING";
     }
 

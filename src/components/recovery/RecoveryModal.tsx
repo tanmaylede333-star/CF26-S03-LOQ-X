@@ -42,11 +42,27 @@ export const RecoveryModal: React.FC<RecoveryModalProps> = ({
   state,
   onApplyRecovery,
 }) => {
-  // Default to first non-healthy node or first node
+  // Default to first non-healthy node or selected node
   const nonHealthyNodes = state.nodes.filter((n) => n.status !== 'HEALTHY');
   const [selectedNodeId, setSelectedNodeId] = useState<string>(
-    nonHealthyNodes[0]?.id || state.selectedNodeId || state.nodes[0]?.id || ''
+    state.selectedNodeId || nonHealthyNodes[0]?.id || state.nodes[0]?.id || ''
   );
+
+  // Synchronize target node whenever modal opens or active selection changes
+  useEffect(() => {
+    if (isOpen) {
+      if (state.selectedNodeId) {
+        setSelectedNodeId(state.selectedNodeId);
+      } else {
+        const nonHealthy = state.nodes.filter((n) => n.status !== 'HEALTHY');
+        if (nonHealthy.length > 0) {
+          setSelectedNodeId(nonHealthy[0].id);
+        } else if (state.nodes.length > 0) {
+          setSelectedNodeId(state.nodes[0].id);
+        }
+      }
+    }
+  }, [isOpen, state.selectedNodeId, state.nodes]);
 
   const [recoveryType, setRecoveryType] = useState<RecoveryType>('REPAIR');
   const targetNode = state.nodes.find((n) => n.id === selectedNodeId) || state.nodes[0];

@@ -147,14 +147,36 @@ export const SyntheticCityMap: React.FC<SyntheticCityMapProps> = ({
   onInjectFailure,
 }) => {
   const selectedNode = state.nodes.find((n) => n.id === state.selectedNodeId) || null;
+  const [mapStyle, setMapStyle] = React.useState<'DARK' | 'SATELLITE' | 'TACTICAL'>('DARK');
 
   // Center on Mumbai / Navapur
   const defaultCenter: [number, number] = [19.0760, 72.8777];
 
+  const tileLayerConfig = {
+    DARK: {
+      url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      attribution: '&copy; CARTO &copy; OpenStreetMap',
+      subdomains: 'abcd',
+      maxZoom: 19,
+    },
+    SATELLITE: {
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      attribution: '&copy; Esri, Maxar, Earthstar Geographics',
+      subdomains: 'abcd',
+      maxZoom: 18,
+    },
+    TACTICAL: {
+      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      attribution: '&copy; OpenStreetMap contributors',
+      subdomains: 'abc',
+      maxZoom: 19,
+    },
+  }[mapStyle];
+
   return (
     <div className="relative w-full h-full min-h-[500px] bg-[#05070d] border border-[#1a2233] rounded overflow-hidden flex flex-col font-mono select-none">
       {/* Top Map HUD Bar */}
-      <div className="absolute top-3 left-3 right-3 z-[1000] flex items-center justify-between pointer-events-none">
+      <div className="absolute top-3 left-3 right-3 z-[1000] flex flex-wrap items-center justify-between gap-2 pointer-events-none">
         <div className="flex items-center gap-2 bg-[var(--surface-bg)]/90 backdrop-blur border border-[var(--border-color)] px-3 py-1.5 rounded pointer-events-auto shadow-xl">
           <Crosshair className="w-3.5 h-3.5 text-[var(--text-secondary)] animate-spin" />
           <span className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider font-heading">
@@ -165,37 +187,57 @@ export const SyntheticCityMap: React.FC<SyntheticCityMapProps> = ({
           </span>
         </div>
 
-        <div className="flex items-center gap-2 bg-[#090d16]/90 backdrop-blur border border-[#1e293b] px-3 py-1.5 rounded pointer-events-auto shadow-xl text-xs">
-          <span className="text-slate-400">STATUS:</span>
-          <span
-            className={`font-bold ${
-              state.metrics.failedCount > 0 ? 'text-red-400 animate-pulse' : 'text-emerald-400'
-            }`}
-          >
-            {state.metrics.failedCount > 0 ? '● CRITICAL FAILURES ACTIVE' : '● NOMINAL GRID'}
-          </span>
+        {/* Map Layer Style Switcher & Status */}
+        <div className="flex items-center gap-2 pointer-events-auto">
+          <div className="flex items-center bg-[#090d16]/90 backdrop-blur border border-[#1e293b] p-0.5 rounded shadow-xl text-[10px]">
+            {(['DARK', 'SATELLITE', 'TACTICAL'] as const).map((style) => (
+              <button
+                key={style}
+                onClick={() => setMapStyle(style)}
+                className={`px-2 py-0.5 rounded font-bold transition-all ${
+                  mapStyle === style
+                    ? 'bg-[#495464] text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {style}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 bg-[#090d16]/90 backdrop-blur border border-[#1e293b] px-3 py-1.5 rounded shadow-xl text-xs">
+            <span className="text-slate-400">STATUS:</span>
+            <span
+              className={`font-bold ${
+                state.metrics.failedCount > 0 ? 'text-red-400 animate-pulse' : 'text-emerald-400'
+              }`}
+            >
+              {state.metrics.failedCount > 0 ? '● CRITICAL FAILURES' : '● NOMINAL GRID'}
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Main Interactive Leaflet Map */}
       <div className="flex-1 w-full h-full relative">
         <MapContainer
+          key={mapStyle}
           center={defaultCenter}
           zoom={12.5}
           minZoom={2}
           maxZoom={18}
           scrollWheelZoom={true}
-          className="w-full h-full z-10"
+          className={`w-full h-full z-10 ${mapStyle === 'TACTICAL' ? 'leaflet-tactical-filter' : ''}`}
           style={{ background: '#05070d' }}
         >
           <MapController selectedNode={selectedNode} />
 
-          {/* CartoDB Dark Matter Ultra-Dark Tiles */}
+          {/* Dynamic GIS Basemap Tile Layer */}
           <TileLayer
-            attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            subdomains="abcd"
-            maxZoom={19}
+            attribution={tileLayerConfig.attribution}
+            url={tileLayerConfig.url}
+            subdomains={tileLayerConfig.subdomains}
+            maxZoom={tileLayerConfig.maxZoom}
           />
 
           {/* Inter-Node Dependency Vector Polylines */}

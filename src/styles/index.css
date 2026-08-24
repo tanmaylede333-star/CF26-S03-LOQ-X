@@ -137,8 +137,12 @@ html.light .cyber-grid {
 
 /* Leaflet Titanium Customization */
 .leaflet-container {
-  background: var(--card-subtle) !important;
+  background: #05070d !important;
   font-family: 'JetBrains Mono', monospace !important;
+}
+
+.leaflet-tactical-filter .leaflet-tile-pane {
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
 }
 
 .leaflet-popup-content-wrapper {
