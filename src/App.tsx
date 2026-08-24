@@ -12,6 +12,7 @@ import { ImpactAnalysisView } from './components/views/ImpactAnalysisView';
 import { FailureInjectionModal } from './components/failure/FailureInjectionModal';
 import { RecoveryModal } from './components/recovery/RecoveryModal';
 import { AuthModal } from './components/auth/AuthModal';
+import { GeminiChatDrawer } from './components/chat/GeminiChatDrawer';
 import { AuthService } from './services/authService';
 import { useSimulation } from './hooks/useSimulation';
 import { Scenario } from './types/scenario';
@@ -260,6 +261,13 @@ export function App() {
         onClose={() => setIsRecoveryModalOpen(false)}
         state={state}
         onApplyRecovery={applyRecovery}
+      />
+
+      {/* AI Mission Control Assistant (Gemini 2.5 Flash) */}
+      <GeminiChatDrawer
+        state={state}
+        onApplyRecovery={applyRecovery}
+        onSelectNode={setSelectedNodeId}
       />
     </div>
   );

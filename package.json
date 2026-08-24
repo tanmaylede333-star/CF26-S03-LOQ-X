@@ -10,6 +10,7 @@
     "test": "tsx runTests.ts"
   },
   "dependencies": {
+    "@google/genai": "^2.18.0",
     "@supabase/supabase-js": "^2.112.4",
     "@types/leaflet": "^1.9.22",
     "@xyflow/react": "^12.4.4",
