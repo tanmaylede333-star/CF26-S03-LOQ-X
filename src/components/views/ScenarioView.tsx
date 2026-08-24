@@ -35,6 +35,8 @@ import { INITIAL_CITY_NODES } from '../../data/cityGraph';
 import { RecoveryAction } from '../../types/recovery';
 import { StorageService } from '../../services/storageService';
 import { ScenarioRepository } from '../../services/ScenarioRepository';
+import { SecurityValidator } from '../../services/SecurityValidator';
+import { RateLimiter } from '../../services/RateLimiter';
 
 interface ScenarioViewProps {
   activeScenario: Scenario;
@@ -100,8 +102,17 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
 
   // --- AI NATURAL LANGUAGE SCENARIO SYNTHESIS ENGINE ---
   const handleGenerateAIScenario = (promptText?: string) => {
-    const text = (promptText || aiPrompt).trim().toLowerCase();
+    const rawPrompt = promptText || aiPrompt;
+    const sanitizedPrompt = SecurityValidator.sanitizeText(rawPrompt, 500);
+    const text = sanitizedPrompt.trim().toLowerCase();
     if (!text) return;
+
+    // Rate-limit check
+    const rateCheck = RateLimiter.checkAILimit(userId || 'anonymous');
+    if (!rateCheck.allowed) {
+      alert(`AI Synthesizer rate limit reached. Please wait ${rateCheck.retryAfterSeconds}s before requesting again.`);
+      return;
+    }
 
     setIsGenerating(true);
 
@@ -196,11 +207,11 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
         });
       }
 
-      const newScenario: Scenario = {
+      const validation = SecurityValidator.validateScenario({
         id: `ai-scenario-${Date.now()}`,
         name: titleName,
         category: detectedCategory,
-        description: `AI Synthesized Scenario from prompt: "${promptText || aiPrompt}". Validated multi-asset disruption model.`,
+        description: `AI Synthesized Scenario from prompt: "${sanitizedPrompt}". Validated multi-asset disruption model.`,
         graphVersion: '2.4.0',
         isPredefined: false,
         initialFailures: generatedFailures,
@@ -210,9 +221,11 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
           defaultRecoveryDuration: 20,
         },
         scheduledRecoveries: [],
-      };
+      });
 
-      setSynthesizedScenario(newScenario);
+      if (validation.isValid && validation.sanitizedData) {
+        setSynthesizedScenario(validation.sanitizedData);
+      }
       setIsGenerating(false);
     }, 500);
   };
@@ -228,14 +241,20 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
   };
 
   const handleAddSynthesizedToLibrary = async (sc: Scenario) => {
-    await ScenarioRepository.saveScenario(sc, userId);
+    const res = await ScenarioRepository.saveScenario(sc, userId);
+    if (!res.success && res.error) {
+      alert(`Save notice: ${res.error}`);
+    }
     const updatedList = await ScenarioRepository.listScenarios(userId);
     setAllScenarios(updatedList);
     setSynthesizedScenario(null);
   };
 
   const handleLaunchSynthesizedDirectly = async (sc: Scenario) => {
-    await ScenarioRepository.saveScenario(sc, userId);
+    const res = await ScenarioRepository.saveScenario(sc, userId);
+    if (!res.success && res.error) {
+      alert(`Save notice: ${res.error}`);
+    }
     const updatedList = await ScenarioRepository.listScenarios(userId);
     setAllScenarios(updatedList);
     onSelectScenario(sc);
@@ -260,9 +279,9 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
     setInitialFailures(initialFailures.filter((_, i) => i !== index));
   };
 
-  const handleUpdateFailure = (index: number, field: keyof InitialFailure, val: any) => {
+  const handleUpdateFailure = (index: number, key: string, value: any) => {
     const updated = [...initialFailures];
-    updated[index] = { ...updated[index], [field]: val };
+    updated[index] = { ...updated[index], [key]: value };
     setInitialFailures(updated);
   };
 
@@ -272,7 +291,7 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
       return;
     }
 
-    const customScenario: Scenario = {
+    const validation = SecurityValidator.validateScenario({
       id: `custom-scenario-${Date.now()}`,
       name: scenarioName.trim() || 'Custom Scenario',
       category: scenarioCategory,
@@ -286,9 +305,21 @@ export const ScenarioView: React.FC<ScenarioViewProps> = ({
         defaultRecoveryDuration: 20,
       },
       scheduledRecoveries: [],
-    };
+    });
 
-    await ScenarioRepository.saveScenario(customScenario, userId);
+    if (!validation.isValid || !validation.sanitizedData) {
+      alert(`Validation error: ${validation.errors.join(' ')}`);
+      return;
+    }
+
+    const customScenario = validation.sanitizedData;
+
+    const res = await ScenarioRepository.saveScenario(customScenario, userId);
+    if (!res.success && res.error) {
+      alert(`Save error: ${res.error}`);
+      return;
+    }
+
     const updatedList = await ScenarioRepository.listScenarios(userId);
     setAllScenarios(updatedList);
     onSelectScenario(customScenario);

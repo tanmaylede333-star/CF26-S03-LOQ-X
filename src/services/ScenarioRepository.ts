@@ -2,18 +2,46 @@ import { Scenario } from '../types/scenario';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { StorageService } from './storageService';
 import { PREDEFINED_SCENARIOS } from '../data/scenarios';
+import { SecurityValidator } from './SecurityValidator';
+import { RateLimiter } from './RateLimiter';
 
 export class ScenarioRepository {
   /**
-   * Save a scenario.
+   * Save a scenario with security validation and rate-limiting.
    * Primary: Supabase PostgreSQL (when user is authenticated and online)
    * Fallback: localStorage
    */
-  public static async saveScenario(scenario: Scenario, userId?: string | null): Promise<{ success: boolean; source: 'supabase' | 'local'; error?: string }> {
+  public static async saveScenario(
+    rawScenario: unknown,
+    userId?: string | null
+  ): Promise<{ success: boolean; source: 'supabase' | 'local'; error?: string }> {
+    // 1. Rate-limit check
+    const rateCheck = RateLimiter.checkScenarioSaveLimit(userId || 'anonymous');
+    if (!rateCheck.allowed) {
+      return {
+        success: false,
+        source: 'local',
+        error: `Rate limit exceeded. Please wait ${rateCheck.retryAfterSeconds}s before saving again.`,
+      };
+    }
+
+    // 2. Strict Input Validation & Sanitization
+    const validation = SecurityValidator.validateScenario(rawScenario);
+    if (!validation.isValid || !validation.sanitizedData) {
+      return {
+        success: false,
+        source: 'local',
+        error: `Validation failed: ${validation.errors.join(' ')}`,
+      };
+    }
+
+    const scenario = validation.sanitizedData;
+
     // Always persist to local fallback first for offline resilience
     StorageService.saveScenario(scenario);
 
-    if (isSupabaseConfigured() && supabase && userId) {
+    // 3. If Supabase is online and user is authenticated with a valid UUID
+    if (isSupabaseConfigured() && supabase && userId && SecurityValidator.isValidUUID(userId)) {
       try {
         const { error } = await supabase.from('scenarios').upsert({
           id: scenario.id,
@@ -27,7 +55,7 @@ export class ScenarioRepository {
           initial_failures: scenario.initialFailures || [],
           parameters: scenario.parameters || {},
           scheduled_recoveries: scenario.scheduledRecoveries || [],
-          is_benchmark: false,
+          is_benchmark: false, // Standard users can NEVER mark scenarios as benchmark
           updated_at: new Date().toISOString(),
         });
 
@@ -59,8 +87,8 @@ export class ScenarioRepository {
     // 2. Add local custom scenarios
     localCustom.forEach((s) => scenarioMap.set(s.id, s));
 
-    // 3. If Supabase is online and user is authenticated, fetch cloud scenarios
-    if (isSupabaseConfigured() && supabase && userId) {
+    // 3. If Supabase is online and user is authenticated, fetch cloud scenarios using safe parameterized query
+    if (isSupabaseConfigured() && supabase && userId && SecurityValidator.isValidUUID(userId)) {
       try {
         const { data, error } = await supabase
           .from('scenarios')
@@ -70,19 +98,18 @@ export class ScenarioRepository {
         if (!error && data) {
           data.forEach((row: any) => {
             const mapped: Scenario = {
-              id: row.id,
-              name: row.name,
-              category: row.category,
-              description: row.description,
-              graphVersion: row.graph_version,
-              nodes: row.nodes,
-              edges: row.edges,
-              initialFailures: row.initial_failures,
-              parameters: row.parameters,
-              scheduledRecoveries: row.scheduled_recoveries,
+              id: SecurityValidator.sanitizeText(row.id, 100),
+              name: SecurityValidator.sanitizeText(row.name, 120),
+              category: row.category || 'CUSTOM',
+              description: SecurityValidator.sanitizeText(row.description, 2000),
+              graphVersion: SecurityValidator.sanitizeText(row.graph_version, 50),
+              nodes: row.nodes || [],
+              edges: row.edges || [],
+              initialFailures: row.initial_failures || [],
+              parameters: row.parameters || { maxSimulationTime: 60, defaultPropagationDelay: 5, defaultRecoveryDuration: 15 },
+              scheduledRecoveries: row.scheduled_recoveries || [],
             };
             scenarioMap.set(mapped.id, mapped);
-            // Cache locally
             StorageService.saveScenario(mapped);
           });
         }
@@ -95,17 +122,18 @@ export class ScenarioRepository {
   }
 
   /**
-   * Delete a scenario from Supabase and local storage.
+   * Delete a scenario from Supabase and local storage (only owned by user).
    */
   public static async deleteScenario(scenarioId: string, userId?: string | null): Promise<void> {
-    StorageService.deleteScenario(scenarioId);
+    const sanitizedId = SecurityValidator.sanitizeText(scenarioId, 100);
+    StorageService.deleteScenario(sanitizedId);
 
-    if (isSupabaseConfigured() && supabase && userId) {
+    if (isSupabaseConfigured() && supabase && userId && SecurityValidator.isValidUUID(userId)) {
       try {
         await supabase
           .from('scenarios')
           .delete()
-          .match({ id: scenarioId, user_id: userId });
+          .match({ id: sanitizedId, user_id: userId });
       } catch (e) {
         console.warn('Failed to delete scenario from Supabase:', e);
       }
